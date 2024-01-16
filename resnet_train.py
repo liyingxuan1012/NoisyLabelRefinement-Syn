@@ -1,5 +1,6 @@
 import torch
 from torchvision import datasets, models, transforms
+from torchvision.models import ResNet50_Weights
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -18,24 +19,25 @@ image_transforms = {
         transforms.Resize(size=256),
         transforms.CenterCrop(size=256),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5125,0.4667,0.4110],
-                             std=[0.2621,0.2501,0.2453])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
     ]),
     'valid': transforms.Compose([
         transforms.Resize(size=256),
         transforms.CenterCrop(size=256),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5125,0.4667,0.4110],
-                             std=[0.2621,0.2501,0.2453])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
     ])
 }
 
-dataset = './data70'
+dataset = 'ImageNet100'
 train_directory = os.path.join(dataset, 'train')
-valid_directory = os.path.join(dataset, 'valid')
+valid_directory = os.path.join(dataset, 'val')
+model_directory = os.path.join('models', dataset + '_model_best.pt')
 
-batch_size = 32
-num_classes = 349
+batch_size = 256
+num_classes = 100
 data = {
     'train': datasets.ImageFolder(root=train_directory, transform=image_transforms['train']),
     'valid': datasets.ImageFolder(root=valid_directory, transform=image_transforms['valid'])
@@ -50,26 +52,8 @@ valid_data = DataLoader(data['valid'], batch_size=batch_size, shuffle=True, num_
 # print(train_data_size, valid_data_size)
 
 
-# load pretrained ResNet-50
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-resnet50 = models.resnet50(pretrained=True)
-
-fc_inputs = resnet50.fc.in_features
-resnet50.fc = nn.Sequential(
-    nn.Linear(fc_inputs, 256),
-    nn.ReLU(),
-    nn.Dropout(0.4),
-    nn.Linear(256, num_classes),
-    nn.LogSoftmax(dim=1)
-)
-resnet50 = resnet50.to(device)
-
-loss_func = nn.NLLLoss()
-optimizer = optim.SGD(resnet50.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
-
 # configure logging
-logging.basicConfig(filename='./training70.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='resnet50_train.log', filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 
@@ -79,7 +63,32 @@ console_handler.setFormatter(formatter)
 logging.getLogger().addHandler(console_handler)
 
 
-def train_and_valid(model, loss_function, optimizer, scheduler, epochs=25):
+# load pretrained ResNet-50
+device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+if os.path.exists(model_directory):
+    model = torch.load(model_directory)
+    fc_inputs = model.fc[0].in_features
+    logging.info("Load model from {}".format(model_directory))
+else:
+    model = models.resnet50(weights=ResNet50_Weights.DEFAULT)
+    fc_inputs = model.fc.in_features
+    logging.info("Load pretrained ResNet-50")
+
+model.fc = nn.Sequential(
+    nn.Linear(fc_inputs, 256),
+    nn.ReLU(),
+    nn.Dropout(0.4),
+    nn.Linear(256, num_classes),
+    nn.LogSoftmax(dim=1)
+)
+model = model.to(device)
+
+loss_func = nn.CrossEntropyLoss()
+optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+
+
+def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     history = []
     best_acc = 0.0
@@ -137,7 +146,7 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs=25):
         if best_acc < avg_valid_acc:
             best_acc = avg_valid_acc
             best_epoch = epoch + 1
-            torch.save(model, 'models/'+dataset+'_model_best.pt')
+            torch.save(model, model_directory)
 
         epoch_end = time.time()
 
@@ -149,9 +158,9 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs=25):
         # torch.save(model, 'models/'+dataset+'_model_'+str(epoch+1)+'.pt')
     return model, history
 
-num_epochs = 100
-trained_model, history = train_and_valid(resnet50, loss_func, optimizer, scheduler, num_epochs)
-torch.save(history, 'models/'+dataset+'_history.pt')
+num_epochs = 50
+trained_model, history = train_and_valid(model, loss_func, optimizer, scheduler, num_epochs)
+torch.save(history, 'models/' + dataset + '_history.pt')
 
 
 history = np.array(history)
@@ -159,12 +168,12 @@ plt.plot(history[:, 0:2])
 plt.legend(['Tr Loss', 'Val Loss'])
 plt.xlabel('Epoch Number')
 plt.ylabel('Loss')
-plt.savefig(dataset+'_loss_curve.png')
+plt.savefig(dataset + '_loss_curve.png')
 plt.close()
 
 plt.plot(history[:, 2:4])
 plt.legend(['Tr Accuracy', 'Val Accuracy'])
 plt.xlabel('Epoch Number')
 plt.ylabel('Accuracy')
-plt.savefig(dataset+'_accuracy_curve.png')
+plt.savefig(dataset + '_accuracy_curve.png')
 plt.close()
