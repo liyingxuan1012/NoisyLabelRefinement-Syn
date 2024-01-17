@@ -9,7 +9,7 @@ def pridict():
     # image preprocessing
     transform = transforms.Compose([
         transforms.Resize(size=256),
-        transforms.CenterCrop(size=256),
+        transforms.CenterCrop(size=224),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
@@ -18,24 +18,19 @@ def pridict():
     dataset = 'ImageNet100'
     # test_directory = os.path.join(dataset, 'val')
     test_directory = os.path.join('ImageNet100-SD')
-    model_directory = os.path.join('models_tmp', dataset + '_model_best.pt')
+    model_directory = os.path.join('models', dataset + '_model_best.pt')
 
     data = datasets.ImageFolder(root=test_directory, transform=transform)
     data_size = len(data)
     test_data = DataLoader(data)
-
-    # class_to_idx = data.class_to_idx
-    # idx_to_class = dict((val, key) for key, val in class_to_idx.items())
-    # print(idx_to_class)
     
     # load model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
     model = torch.load(model_directory)
     model = model.to(device)
- 
     model.eval()
 
-
+    # test
     test_acc = 0.0
     with torch.no_grad():
         for i, (inputs, labels) in enumerate(tqdm(test_data)):

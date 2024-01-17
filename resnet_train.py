@@ -17,14 +17,14 @@ from tqdm import tqdm
 image_transforms = {
     'train': transforms.Compose([
         transforms.Resize(size=256),
-        transforms.CenterCrop(size=256),
+        transforms.CenterCrop(size=224),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
     ]),
     'valid': transforms.Compose([
         transforms.Resize(size=256),
-        transforms.CenterCrop(size=256),
+        transforms.CenterCrop(size=224),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
@@ -53,7 +53,7 @@ valid_data = DataLoader(data['valid'], batch_size=batch_size, shuffle=True, num_
 
 
 # configure logging
-logging.basicConfig(filename='resnet50_train.log', filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='resnet_train.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 
