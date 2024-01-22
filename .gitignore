@@ -1,5 +1,6 @@
-/ImageNet100*
-/models*
+__pycache__
+ImageNet100*
+models*
 *.log
 *.png
 finetune.sh.o*

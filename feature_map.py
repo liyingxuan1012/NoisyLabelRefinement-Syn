@@ -5,7 +5,7 @@ import random
 from feature_extractor import ResNet50FeatureExtractor, load_model, preprocess_image
 
 
-# visualization fuctions
+# visualize features
 def plot_feature_maps(layers_output, num_columns, channels_per_layer):
     num_layers = len(layers_output)
     fig, axes = plt.subplots(num_layers, num_columns, figsize=(num_columns * 2, num_layers * 2))
@@ -17,10 +17,10 @@ def plot_feature_maps(layers_output, num_columns, channels_per_layer):
 
     for i, feature_maps in enumerate(layers_output):
         feature_maps = feature_maps.squeeze(0).cpu().detach().numpy()
-        summed_feature_map_normalized = np.sum(feature_maps, axis=0)
-        summed_feature_map_normalized = normalize_feature_map(summed_feature_map_normalized)
+        summed_feature_map = np.sum(feature_maps, axis=0)
+        summed_feature_map_normalized = normalize_feature_map(summed_feature_map)
         
-        # 1st column
+        # the 1st column
         axes[i, 0].imshow(summed_feature_map_normalized, cmap='viridis')
         axes[i, 0].set_yticks([])
         axes[i, 0].set_xticks([])
@@ -58,5 +58,5 @@ image = preprocess_image(img_path, device)
 with torch.no_grad():
     layers_output = feature_map_extractor(image)
 
-# visualize features
+# main
 plot_feature_maps(layers_output, num_columns=11, channels_per_layer=10)
