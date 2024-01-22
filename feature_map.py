@@ -20,7 +20,7 @@ def plot_feature_maps(layers_output, num_columns, channels_per_layer):
         summed_feature_map = np.sum(feature_maps, axis=0)
         summed_feature_map_normalized = normalize_feature_map(summed_feature_map)
         
-        # the 1st column
+        # show the 1st column
         axes[i, 0].imshow(summed_feature_map_normalized, cmap='viridis')
         axes[i, 0].set_yticks([])
         axes[i, 0].set_xticks([])
@@ -29,7 +29,7 @@ def plot_feature_maps(layers_output, num_columns, channels_per_layer):
         if i == 0:
             axes[i, 0].set_title("Sum")
         
-        # other columns
+        # show other columns
         for j, channel in enumerate(selected_channels):
             if channel < feature_maps.shape[0]:
                 channel_feature_map_normalized = normalize_feature_map(feature_maps[channel])
@@ -43,6 +43,21 @@ def plot_feature_maps(layers_output, num_columns, channels_per_layer):
     plt.savefig('feature_maps.png')
     plt.close()
 
+# draw a histogram of the summed feature map (layer 8)
+def plot_layer_histogram(layers_output):
+    num_layers = len(layers_output)
+    feature_map = np.sum(layers_output[num_layers-2].squeeze(0).cpu().detach().numpy(), axis=0)
+    feature_map_normalized = normalize_feature_map(feature_map)
+    flattened_feature_map = feature_map_normalized.flatten()
+
+    plt.figure(figsize=(10, 6))
+    plt.hist(flattened_feature_map, bins=30, rwidth=0.9)
+    plt.title(f"Histogram of Summed Feature Map - Layer 8")
+    plt.xlabel("Value")
+    plt.ylabel("Frequency")
+    plt.savefig(f'layer8_histogram.png')
+    plt.close()
+
 def normalize_feature_map(feature_map):
     return (feature_map - np.min(feature_map)) / (np.max(feature_map) - np.min(feature_map) + 1e-5)
 
@@ -53,10 +68,11 @@ model = load_model('models/ImageNet100_model_best.pt', device)
 feature_map_extractor = ResNet50FeatureExtractor(model, extract_layers=True).to(device)
 
 # load image and extract features
-img_path = 'ImageNet100-SD/n01531178/00037.png'
+img_path = 'ImageNet100-SD/n01491361/00007.png'
 image = preprocess_image(img_path, device)
 with torch.no_grad():
     layers_output = feature_map_extractor(image)
 
 # main
 plot_feature_maps(layers_output, num_columns=11, channels_per_layer=10)
+plot_layer_histogram(layers_output)
