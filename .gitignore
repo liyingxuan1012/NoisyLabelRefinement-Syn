@@ -1,5 +1,5 @@
 /ImageNet100*
 /models*
 *.log
-finetune.sh.o*
 *.png
+finetune.sh.o*
