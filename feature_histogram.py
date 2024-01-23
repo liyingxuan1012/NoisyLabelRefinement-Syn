@@ -1,8 +1,29 @@
+import os
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
 from feature_extractor import ResNet50FeatureExtractor, load_model, preprocess_image
 
+
+def load_images(folder, device):
+    images = []
+    for filename in os.listdir(folder):
+        img_path = os.path.join(folder, filename)
+        img = preprocess_image(img_path, device)
+        images.append(img)
+    return images
+
+def compute_average_feature_map(images, feature_extractor):
+    sum_feature_maps = None
+    with torch.no_grad():
+        for img in images:
+            feature_map = feature_extractor(img)
+            if sum_feature_maps is None:
+                sum_feature_maps = feature_map
+            else:
+                sum_feature_maps += feature_map
+    avg_feature_map = sum_feature_maps / len(images)
+    return avg_feature_map
 
 def plot_layer_histogram(real_layers_output, generated_layers_output, n_channels):
     real_summed_values = []
@@ -55,18 +76,15 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = load_model('models/ImageNet100_model_best.pt', device)
 feature_extractor = ResNet50FeatureExtractor(model).to(device)
 
-# process real image
-real_img_path = 'ImageNet100/val/n01531178/ILSVRC2012_val_00003548.JPEG'
-real_image = preprocess_image(real_img_path, device)
-with torch.no_grad():
-    real_layers_output = feature_extractor(real_image)
+# load images
+class_id = 'n01531178'
+real_images = load_images(f'ImageNet100/val/{class_id}', device)
+generated_images = load_images(f'ImageNet100-SD/{class_id}', device)
 
-# process generated image
-generated_img_path = 'ImageNet100-SD/n01531178/00037.png'
-generated_image = preprocess_image(generated_img_path, device)
-with torch.no_grad():
-    generated_layers_output = feature_extractor(generated_image)
+# compute average feature maps
+avg_real_feature_map = compute_average_feature_map(real_images, feature_extractor)
+avg_generated_feature_map = compute_average_feature_map(generated_images, feature_extractor)
 
-# show the histogram of values
+# plot the histogram of values
 num_channels = 30
-plot_layer_histogram(real_layers_output, generated_layers_output, num_channels)
+plot_layer_histogram(avg_real_feature_map, avg_generated_feature_map, num_channels)
