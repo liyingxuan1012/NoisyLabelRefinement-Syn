@@ -46,7 +46,7 @@ def plot_feature_maps(layers_output, num_columns, channels_per_layer):
 # draw a histogram of the summed feature map (layer 8)
 def plot_layer_histogram(layers_output):
     num_layers = len(layers_output)
-    feature_map = np.sum(layers_output[num_layers-2].squeeze(0).cpu().detach().numpy(), axis=0)
+    feature_map = np.sum(layers_output[num_layers-1].squeeze(0).cpu().detach().numpy(), axis=0)
     feature_map_normalized = normalize_feature_map(feature_map)
     flattened_feature_map = feature_map_normalized.flatten()
 

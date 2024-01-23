@@ -8,7 +8,7 @@ class ResNet50FeatureExtractor(nn.Module):
     def __init__(self, original_model, extract_layers=False):
         super(ResNet50FeatureExtractor, self).__init__()
         if extract_layers:
-            self.features = list(original_model.children())[:-1]
+            self.features = list(original_model.children())[:-2]
         else:
             self.features = nn.Sequential(*list(original_model.children())[:-1])
 
