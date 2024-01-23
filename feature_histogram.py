@@ -59,7 +59,8 @@ def plot_layer_histogram(real_layers_output, generated_layers_output, n_channels
     plt.ylabel('Summed Value')
     plt.title('Summed Values per Channel')
     plt.xticks(x, selected_channels)
-    plt.legend(fontsize=14)
+    plt.legend(fontsize='large')
+    plt.xlim(min(x) - 1, max(x + width) + 1)
 
     plt.tight_layout()
     plt.savefig('feature_histogram.png')
