@@ -12,7 +12,7 @@ def plot_layer_histogram(real_layers_output, generated_layers_output, n_channels
     real_feature_maps = real_layers_output.squeeze(0).cpu().detach().numpy()
     generated_feature_maps = generated_layers_output.squeeze(0).cpu().detach().numpy()
 
-    # find top N channels with the highest values in the last layer
+    # find top N channels with the highest values
     summed_feature_map = np.sum(real_feature_maps, axis=(1, 2))
     selected_channels = np.argsort(summed_feature_map)[-n_channels:][::-1]
 
@@ -67,6 +67,6 @@ generated_image = preprocess_image(generated_img_path, device)
 with torch.no_grad():
     generated_layers_output = feature_extractor(generated_image)
 
-# select channels
+# show the histogram of values
 num_channels = 30
 plot_layer_histogram(real_layers_output, generated_layers_output, num_channels)
