@@ -43,7 +43,7 @@ def plot_layer_histogram(real_layers_output, generated_layers_output, n_channels
     ax.legend()
 
     fig.tight_layout()
-    plt.savefig('layer8_channel_sum_comparison.png')
+    plt.savefig('feature_histogram.png')
     plt.close()
 
 def normalize_feature_map(feature_map):
