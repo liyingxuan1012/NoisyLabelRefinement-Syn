@@ -1,3 +1,4 @@
+import os
 import torch
 from torchvision import datasets, models, transforms
 from torchvision.models import ResNet50_Weights
@@ -9,7 +10,6 @@ import logging
 
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 from tqdm import tqdm
 
 
@@ -31,6 +31,17 @@ image_transforms = {
     ])
 }
 
+# configure logging
+logging.basicConfig(filename='resnet_train.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+
+logging.getLogger().addHandler(console_handler)
+
+# load data
 dataset = 'ImageNet100'
 train_directory = os.path.join(dataset, 'train')
 valid_directory = os.path.join(dataset, 'val')
@@ -43,7 +54,6 @@ data = {
     'valid': datasets.ImageFolder(root=valid_directory, transform=image_transforms['valid'])
 }
 
-
 train_data_size = len(data['train'])
 valid_data_size = len(data['valid'])
 
@@ -51,22 +61,10 @@ train_data = DataLoader(data['train'], batch_size=batch_size, shuffle=True, num_
 valid_data = DataLoader(data['valid'], batch_size=batch_size, shuffle=True, num_workers=8)
 # print(train_data_size, valid_data_size)
 
-
-# configure logging
-logging.basicConfig(filename='resnet_train.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-
-formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-console_handler.setFormatter(formatter)
-
-logging.getLogger().addHandler(console_handler)
-
-
 # load pretrained ResNet-50
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 if os.path.exists(model_directory):
-    model = torch.load(model_directory)
+    model = torch.load(model_directory, map_location=device)
     fc_inputs = model.fc[0].in_features
     logging.info("Load model from {}".format(model_directory))
 else:
@@ -123,7 +121,6 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
 
         with torch.no_grad():
             model.eval()
-
             for j, (inputs, labels) in enumerate(tqdm(valid_data)):
                 inputs = inputs.to(device)
                 labels = labels.to(device)
@@ -158,22 +155,25 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
         # torch.save(model, 'models/'+dataset+'_model_'+str(epoch+1)+'.pt')
     return model, history
 
+def plot_curve(history):
+    history = np.array(history)
+    plt.plot(history[:, 0:2])
+    plt.legend(['Tr Loss', 'Val Loss'])
+    plt.xlabel('Epoch Number')
+    plt.ylabel('Loss')
+    plt.savefig(dataset + '_loss_curve.png')
+    plt.close()
+
+    plt.plot(history[:, 2:4])
+    plt.legend(['Tr Accuracy', 'Val Accuracy'])
+    plt.xlabel('Epoch Number')
+    plt.ylabel('Accuracy')
+    plt.savefig(dataset + '_accuracy_curve.png')
+    plt.close()
+
+
+# main
 num_epochs = 50
 trained_model, history = train_and_valid(model, loss_func, optimizer, scheduler, num_epochs)
 torch.save(history, 'models/' + dataset + '_history.pt')
-
-
-history = np.array(history)
-plt.plot(history[:, 0:2])
-plt.legend(['Tr Loss', 'Val Loss'])
-plt.xlabel('Epoch Number')
-plt.ylabel('Loss')
-plt.savefig(dataset + '_loss_curve.png')
-plt.close()
-
-plt.plot(history[:, 2:4])
-plt.legend(['Tr Accuracy', 'Val Accuracy'])
-plt.xlabel('Epoch Number')
-plt.ylabel('Accuracy')
-plt.savefig(dataset + '_accuracy_curve.png')
-plt.close()
+# plot_curve(history)

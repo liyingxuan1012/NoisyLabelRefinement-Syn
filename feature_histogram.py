@@ -48,22 +48,20 @@ def plot_layer_histogram(real_layers_output, generated_layers_output, n_channels
     generated_summed_values = normalize_feature_map(np.array(generated_summed_values))
 
     # plotting
-    x = np.arange(len(selected_channels))
     width = 0.3
+    x = np.arange(len(selected_channels))
 
-    fig_width = max(10, len(selected_channels) * 0.5)  # Adjust the figure width based on the number of channels
-    fig, ax = plt.subplots(figsize=(fig_width, 6))
-    rects1 = ax.bar(x - width/2, real_summed_values, width, label='Real')
-    rects2 = ax.bar(x + width/2, generated_summed_values, width, label='Generated')
+    plt.figure(figsize=(len(selected_channels) * 0.5, 6))
+    plt.bar(x - width/2, real_summed_values, width, label='Real  Images')
+    plt.bar(x + width/2, generated_summed_values, width, label='Generated  Images')
 
-    ax.set_xlabel('Channel')
-    ax.set_ylabel('Summed Value')
-    ax.set_title('Summed Values per Channel')
-    ax.set_xticks(x)
-    ax.set_xticklabels(selected_channels)
-    ax.legend()
+    plt.xlabel('Channel')
+    plt.ylabel('Summed Value')
+    plt.title('Summed Values per Channel')
+    plt.xticks(x, selected_channels)
+    plt.legend(fontsize=14)
 
-    fig.tight_layout()
+    plt.tight_layout()
     plt.savefig('feature_histogram.png')
     plt.close()
 
