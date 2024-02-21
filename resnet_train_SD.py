@@ -155,4 +155,3 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
 
 num_epochs = 50
 trained_model, history = train_and_valid(model, loss_func, optimizer, scheduler, num_epochs)
-

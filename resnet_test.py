@@ -59,7 +59,6 @@ def predict(test_directory):
 
     return class_accuracies, total_correct, data_size
 
-
 def plot_class_accuracies(real_class_ids, real_class_acc, generated_class_ids, generated_class_acc):
     assert real_class_ids == generated_class_ids
     num_classes = len(real_class_ids)
@@ -98,4 +97,5 @@ generated_total_acc = generated_total_correct / generated_data_size
 print(f"Acc_real_total: {real_total_correct} / {real_data_size} = {real_total_acc:.4f}")
 print(f"Acc_generated_total: {generated_total_correct} / {generated_data_size} = {generated_total_acc:.4f}")
 
+# plot class accuracies
 plot_class_accuracies(list(real_class_acc.keys()), list(real_class_acc.values()), list(generated_class_acc.keys()), list(generated_class_acc.values()))
