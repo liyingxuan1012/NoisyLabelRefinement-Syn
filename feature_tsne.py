@@ -83,4 +83,4 @@ for i, label in enumerate(all_labels):
 plt.title('t-SNE Visualization of Image Features')
 plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize='large')
 plt.tight_layout()
-plt.savefig('t_sne.png')
+plt.savefig('feature_tsne.png')

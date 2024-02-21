@@ -44,8 +44,8 @@ def plot_layer_histogram(real_layers_output, generated_layers_output, n_channels
             generated_summed_values.append(np.sum(generated_feature_maps[channel]))
     
     # normalize the values
-    real_summed_values = normalize_feature_map(np.array(real_summed_values))
-    generated_summed_values = normalize_feature_map(np.array(generated_summed_values))
+    # real_summed_values = normalize_feature_map(np.array(real_summed_values))
+    # generated_summed_values = normalize_feature_map(np.array(generated_summed_values))
 
     # plotting
     width = 0.3
