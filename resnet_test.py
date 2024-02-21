@@ -29,7 +29,7 @@ model = torch.load(model_directory, map_location=device)
 model.eval()
 
 
-def pridict(test_directory):
+def predict(test_directory):
     data = datasets.ImageFolder(root=test_directory, transform=transform)
     class_to_idx = data.class_to_idx
     idx_to_class = {v: k for k, v in class_to_idx.items()}
@@ -54,20 +54,10 @@ def pridict(test_directory):
                 class_correct[label.item()][1] += 1
                 total_correct += correct.item()
 
-    # calculate and print class accuracies
-    class_accuracies = []
-    class_ids = []
-    for idx, (correct, total) in class_correct.items():
-        accuracy = correct / total
-        class_accuracies.append(accuracy)
-        class_ids.append(idx_to_class[idx])
-        # print(f"Class '{idx_to_class[idx]}' Accuracy: {accuracy:.4f}")
-        
-    # calculate and print total accuracy
-    avg_test_acc = total_correct / data_size
-    print("Total Accuracy: {} / {} = {:.4f}".format(int(total_correct), data_size, avg_test_acc))
+    # calculate class accuracies
+    class_accuracies = {idx_to_class[idx]: correct / total for idx, (correct, total) in class_correct.items()}
 
-    return class_ids, class_accuracies
+    return class_accuracies, total_correct, data_size
 
 
 def plot_class_accuracies(real_class_ids, real_class_acc, generated_class_ids, generated_class_acc):
@@ -95,6 +85,17 @@ def plot_class_accuracies(real_class_ids, real_class_acc, generated_class_ids, g
 
 
 # main
-real_class_ids, real_class_acc = pridict(real_directory)
-generated_class_ids, generated_class_acc = pridict(generated_directory)
-plot_class_accuracies(real_class_ids, real_class_acc, generated_class_ids, generated_class_acc)
+real_class_acc, real_total_correct, real_data_size = predict(real_directory)
+generated_class_acc, generated_total_correct, generated_data_size = predict(generated_directory)
+
+# print class accuracies
+for class_id in real_class_acc.keys():
+    print(f"Class: {class_id}, Acc_real: {real_class_acc[class_id]:.4f}, Acc_generated: {generated_class_acc[class_id]:.4f}")
+
+# calculate and print total accuracies
+real_total_acc = real_total_correct / real_data_size
+generated_total_acc = generated_total_correct / generated_data_size
+print(f"Acc_real_total: {real_total_correct} / {real_data_size} = {real_total_acc:.4f}")
+print(f"Acc_generated_total: {generated_total_correct} / {generated_data_size} = {generated_total_acc:.4f}")
+
+plot_class_accuracies(list(real_class_acc.keys()), list(real_class_acc.values()), list(generated_class_acc.keys()), list(generated_class_acc.values()))
