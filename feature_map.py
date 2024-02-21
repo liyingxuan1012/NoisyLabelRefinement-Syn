@@ -14,10 +14,9 @@ def plot_feature_maps(layers_output, selected_channels, real_image):
     for i, feature_maps in enumerate(layers_output):
         feature_maps = feature_maps.squeeze(0).cpu().detach().numpy()
         summed_feature_map = np.sum(feature_maps, axis=0)
-        summed_feature_map_normalized = normalize_feature_map(summed_feature_map)
         
         # show the 1st column
-        axes[i, 0].imshow(summed_feature_map_normalized, cmap='viridis')
+        axes[i, 0].imshow(summed_feature_map, cmap='viridis')
         axes[i, 0].set_yticks([])
         axes[i, 0].set_xticks([])
         axes[i, 0].set_frame_on(False)
@@ -28,9 +27,9 @@ def plot_feature_maps(layers_output, selected_channels, real_image):
         # show other columns using selected_channels
         for j, channel in enumerate(selected_channels):
             if channel < feature_maps.shape[0]:
-                channel_feature_map_normalized = normalize_feature_map(feature_maps[channel])
+                channel_feature_map = feature_maps[channel]
                 ax = axes[i, j + 1]
-                ax.imshow(channel_feature_map_normalized, cmap='viridis')
+                ax.imshow(channel_feature_map, cmap='viridis')
                 ax.axis('off')
                 if i == 0:
                     ax.set_title(f"Channel {channel}")
@@ -41,9 +40,6 @@ def plot_feature_maps(layers_output, selected_channels, real_image):
     else:
         plt.savefig('feature_maps_generated.png')
     plt.close()
-
-def normalize_feature_map(feature_map):
-    return (feature_map - np.min(feature_map)) / (np.max(feature_map) - np.min(feature_map) + 1e-5)
 
 # find top N channels with the highest values in the first layer
 def find_top_channels(layers_output, n_channels):
