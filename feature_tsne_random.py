@@ -5,6 +5,7 @@ import matplotlib as mpl
 import numpy as np
 import os
 import json
+import random
 from feature_extractor import ResNet50FeatureExtractor, load_model, preprocess_image
 
 
@@ -37,12 +38,12 @@ feature_extractor = ResNet50FeatureExtractor(model).to(device)
 with open('ImageNet100/Labels.json', 'r') as file:
     labels = json.load(file)
 
-# select categories
-selected_classes = ['n01440764', 'n01443537']
-num_classes = len(selected_classes)
+# randomly select some categories
+num_classes = 10
+selected_classes = random.sample(list(labels.keys()), num_classes)
 for i, class_id in enumerate(selected_classes):
     class_name = labels[class_id]
-    print(f"Class ID: {class_id}, Class Name: {class_name}")
+    print(f"Class {i+1}, Class ID: {class_id}, Class Name: {class_name}")
 
 # extract features
 all_features = []
@@ -60,17 +61,17 @@ for i, class_id in enumerate(selected_classes):
     all_features.append(real_features)
     all_features.append(generated_features)
 
-    all_labels.append(f'{class_id}_Real')
-    all_labels.append(f'{class_id}_Generated')
+    all_labels.append(f'Class{i+1}_Real')
+    all_labels.append(f'Class{i+1}_Generated')
 
 # t-SNE
 feature_counts = [len(f) for f in all_features]
 all_features = np.vstack(all_features)
-tsne = TSNE(n_components=2, perplexity=40, random_state=0)
+tsne = TSNE(n_components=2, perplexity=30, random_state=0)
 reduced_features = tsne.fit_transform(all_features)
 
 # visualization
-plt.figure(figsize=(10, 8))
+plt.figure(figsize=(15, 12))
 colors = generate_colors(num_classes * 2)
 current_idx = 0
 for i, label in enumerate(all_labels):
@@ -80,6 +81,6 @@ for i, label in enumerate(all_labels):
     current_idx = end_idx
 
 plt.title('t-SNE Visualization of Image Features')
-plt.legend(loc='best', fontsize='large')
+plt.legend(loc='best', bbox_to_anchor=(1, 1), fontsize='large')
 plt.tight_layout()
 plt.savefig('feature_tsne.png')
