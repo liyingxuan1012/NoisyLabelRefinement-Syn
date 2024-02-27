@@ -65,12 +65,14 @@ valid_data = DataLoader(data['valid'], batch_size=batch_size, shuffle=True, num_
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 if os.path.exists(model_directory):
     model = torch.load(model_directory, map_location=device)
-    fc_inputs = model.fc[0].in_features
     logging.info("Load model from {}".format(model_directory))
+    fc_inputs = model.fc[0].in_features
 else:
-    model = models.resnet50(weights=ResNet50_Weights.DEFAULT)
+    # model = models.resnet50(weights=ResNet50_Weights.DEFAULT)
+    # logging.info("Load pretrained ResNet-50")
+    model = models.resnet50(weights=None)
+    logging.info("Initialize ResNet-50 from scratch")
     fc_inputs = model.fc.in_features
-    logging.info("Load pretrained ResNet-50")
 
 model.fc = nn.Sequential(
     nn.Linear(fc_inputs, 256),
@@ -82,8 +84,8 @@ model.fc = nn.Sequential(
 model = model.to(device)
 
 loss_func = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=0.001)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
 
 
 def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
@@ -176,4 +178,4 @@ def plot_curve(history):
 num_epochs = 50
 trained_model, history = train_and_valid(model, loss_func, optimizer, scheduler, num_epochs)
 torch.save(history, 'models/' + dataset + '_history.pt')
-# plot_curve(history)
+plot_curve(history)
