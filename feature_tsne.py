@@ -23,7 +23,7 @@ def extract_features(image_paths):
     return features
 
 def generate_colors(num_classes):
-    cmap = mpl.colormaps['tab20']
+    cmap = mpl.colormaps['tab10']
     colors = cmap(np.linspace(0, 1, num_classes))
     return colors
 
@@ -38,7 +38,7 @@ with open('ImageNet100/Labels.json', 'r') as file:
     labels = json.load(file)
 
 # select categories
-selected_classes = ['n01440764', 'n01443537']
+selected_classes = ['n01773549', 'n01775062']
 num_classes = len(selected_classes)
 for i, class_id in enumerate(selected_classes):
     class_name = labels[class_id]
@@ -66,17 +66,22 @@ for i, class_id in enumerate(selected_classes):
 # t-SNE
 feature_counts = [len(f) for f in all_features]
 all_features = np.vstack(all_features)
-tsne = TSNE(n_components=2, perplexity=40, random_state=0)
+tsne = TSNE(n_components=2, perplexity=30, random_state=0)
 reduced_features = tsne.fit_transform(all_features)
 
 # visualization
 plt.figure(figsize=(10, 8))
-colors = generate_colors(num_classes * 2)
+colors = generate_colors(num_classes)
 current_idx = 0
 for i, label in enumerate(all_labels):
     num_features = feature_counts[i]
     end_idx = current_idx + num_features
-    plt.scatter(reduced_features[current_idx:end_idx, 0], reduced_features[current_idx:end_idx, 1], color=colors[i], label=label)
+    # use the same color index for each class
+    color_idx = i // 2
+    if i % 2 == 0:
+        plt.scatter(reduced_features[current_idx:end_idx, 0], reduced_features[current_idx:end_idx, 1], color=colors[color_idx], label=label)
+    else:
+        plt.scatter(reduced_features[current_idx:end_idx, 0], reduced_features[current_idx:end_idx, 1], color=colors[color_idx], alpha=0.5, label=label)
     current_idx = end_idx
 
 plt.title('t-SNE Visualization of Image Features')

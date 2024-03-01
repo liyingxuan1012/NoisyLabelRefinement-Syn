@@ -2,5 +2,7 @@ __pycache__
 ImageNet100*
 models*
 *.log
+*.txt
 *.png
+*.jpg
 finetune.sh.o*
