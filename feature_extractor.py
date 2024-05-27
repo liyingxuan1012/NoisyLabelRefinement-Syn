@@ -35,6 +35,9 @@ def preprocess_image(img_path, device):
         transforms.Normalize(mean=[0.485, 0.456, 0.406], 
                              std=[0.229, 0.224, 0.225]),
     ])
+    
     image = Image.open(img_path)
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
     image = transform(image).unsqueeze(0).to(device)
     return image
