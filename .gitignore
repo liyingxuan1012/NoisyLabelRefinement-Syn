@@ -5,4 +5,4 @@ models*
 *.txt
 *.png
 *.jpg
-finetune.sh.o*
+*.sh.o*
