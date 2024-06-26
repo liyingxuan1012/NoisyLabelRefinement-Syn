@@ -1,4 +1,5 @@
 import os
+import shutil
 import torch
 import numpy as np
 from feature_extractor import ResNet50FeatureExtractor, load_model, preprocess_image
@@ -44,36 +45,41 @@ def compute_average_feature_map(images, feature_extractor):
 
 # load fine-tuned model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = load_model('models/ImageNet100_noisy_model_best.pt', device)
+model = load_model('models_pretrained/c2.pt', device)
 feature_extractor = ResNet50FeatureExtractor(model).to(device)
 
-# get category labels
-dir_path = 'ImageNet100_noisy_filtered/train'
-class_ids = next(os.walk(dir_path))[1]
+src_dir = '/scratch/ace14550vm/ImageNet100_noisy/train'
+dst_dir = 'baseline_sim'
+os.makedirs(dst_dir, exist_ok=True)
 
-for class_id in class_ids:
-    src_images = os.listdir(f'/scratch/ace14550vm/ImageNet100_noisy/train/{class_id}')
-    dst_images = os.listdir(f'{dir_path}/{class_id}')
+for class_id in os.listdir(src_dir):
+    src_path = os.path.join(src_dir, class_id)
+    dst_path = os.path.join(dst_dir, class_id)
+    os.makedirs(dst_path, exist_ok=True)
     print('*' * 50)
-    print(class_id, len(dst_images))
+    print(class_id, len(os.listdir(src_path)), len(os.listdir(dst_path)))
 
-    if len(src_images) == len(dst_images):
+    if len(os.listdir(src_path))-390 != len(os.listdir(dst_path)):
         # load images
-        real_images, filenames = load_images(f'{dir_path}/{class_id}', device)
+        real_images, filenames = load_images(src_path, device)
         generated_images, _ = load_images(f'/scratch/ace14550vm/SD-xl-turbo/train/{class_id}', device)
 
         # compute cosine similarity for each real image against the average generated feature map
         image_similarities = compute_similarities(real_images, filenames, generated_images, feature_extractor)
 
+        image_similarities.sort(key=lambda x: x[1])
         # # print similarities
         # for image, sim in image_similarities:
-        #     print(f"{image}: {sim:.4f}")
+        #     print(f"{image}: Similarity {sim:.4f}")
+        lowest_similarity_images = image_similarities[:390]
+        for image, sim in lowest_similarity_images:
+            print(f"Removing {image}: Similarity {sim:.4f}")
 
         # remove the images with the lowest cosine similarity
-        image_similarities.sort(key=lambda x: x[1])
-        lowest_similarity_images = image_similarities[:100]
-        for image, sim in lowest_similarity_images:
-            print(f"{image}: {sim:.4f}")
-            os.remove(os.path.join(dir_path, class_id, image))
+        top_images = image_similarities[390:]
+        for image, _ in top_images:
+            src_img_path = os.path.join(src_path, image)
+            dst_img_path = os.path.join(dst_path, image)
+            shutil.copy2(src_img_path, dst_img_path)
     else:
         continue
