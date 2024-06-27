@@ -30,15 +30,15 @@ def generate_colors(num_classes):
 
 # load fine-tuned model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = load_model('models/ImageNet100_model_best.pt', device)
+model = load_model('models/ImageNet100_noisy_filtered_model_best.pt', device)
 feature_extractor = ResNet50FeatureExtractor(model).to(device)
 
 # load categories
-with open('ImageNet100/Labels.json', 'r') as file:
+with open('ImageNet100_noisy/Labels.json', 'r') as file:
     labels = json.load(file)
 
 # select categories
-selected_classes = ['n01773549', 'n01775062']
+selected_classes = ['n01484850', 'n01491361', 'n01829413', 'n01843383', 'n01774750', 'n01775062']
 num_classes = len(selected_classes)
 for i, class_id in enumerate(selected_classes):
     class_name = labels[class_id]
@@ -48,7 +48,7 @@ for i, class_id in enumerate(selected_classes):
 all_features = []
 all_labels = []
 for i, class_id in enumerate(selected_classes):
-    real_images_dir = f'ImageNet100/val/{class_id}'
+    real_images_dir = f'ImageNet100_noisy/val/{class_id}'
     generated_images_dir = f'ImageNet100-SD/{class_id}'
 
     real_image_paths = get_image_paths(real_images_dir)
@@ -66,11 +66,11 @@ for i, class_id in enumerate(selected_classes):
 # t-SNE
 feature_counts = [len(f) for f in all_features]
 all_features = np.vstack(all_features)
-tsne = TSNE(n_components=2, perplexity=30, random_state=0)
+tsne = TSNE(n_components=2, perplexity=50, random_state=0)
 reduced_features = tsne.fit_transform(all_features)
 
 # visualization
-plt.figure(figsize=(10, 8))
+plt.figure(figsize=(14, 10))
 colors = generate_colors(num_classes)
 current_idx = 0
 for i, label in enumerate(all_labels):
@@ -85,6 +85,6 @@ for i, label in enumerate(all_labels):
     current_idx = end_idx
 
 plt.title('t-SNE Visualization of Image Features')
-plt.legend(loc='best', fontsize='large')
+plt.legend(loc='best', bbox_to_anchor=(1, 1), fontsize='large')
 plt.tight_layout()
 plt.savefig('feature_tsne.png')

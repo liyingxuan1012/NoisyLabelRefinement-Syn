@@ -1,7 +1,6 @@
 import os
 import torch
 from torchvision import datasets, models, transforms
-from torchvision.models import ResNet50_Weights
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
@@ -32,7 +31,7 @@ image_transforms = {
 }
 
 # configure logging
-logging.basicConfig(filename='resnet_train.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='c2_iter5_f+g.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 
@@ -42,10 +41,12 @@ console_handler.setFormatter(formatter)
 logging.getLogger().addHandler(console_handler)
 
 # load data
-dataset = 'ImageNet100'
-train_directory = os.path.join(dataset, 'train')
+dataset = '/scratch/ace14550vm/ImageNet100_noisy/'
+# train_directory = os.path.join(dataset, 'train')
 valid_directory = os.path.join(dataset, 'val')
-model_directory = os.path.join('models', dataset + '_model_best.pt')
+# model_directory = os.path.join('models_pretrained', dataset + '_model_best.pt')
+train_directory = 'iter5_800'
+model_directory = 'models/c2_iter4_f_test.pt'
 
 batch_size = 256
 num_classes = 100
@@ -68,8 +69,6 @@ if os.path.exists(model_directory):
     logging.info("Load model from {}".format(model_directory))
     fc_inputs = model.fc[0].in_features
 else:
-    # model = models.resnet50(weights=ResNet50_Weights.DEFAULT)
-    # logging.info("Load pretrained ResNet-50")
     model = models.resnet50(weights=None)
     logging.info("Initialize ResNet-50 from scratch")
     fc_inputs = model.fc.in_features
@@ -81,11 +80,15 @@ model.fc = nn.Sequential(
     nn.Linear(256, num_classes),
     nn.LogSoftmax(dim=1)
 )
+
+if torch.cuda.device_count() > 1:
+    logging.info(f"Using {torch.cuda.device_count()} GPUs")
+    model = nn.DataParallel(model)
 model = model.to(device)
 
 loss_func = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 
 def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
@@ -145,7 +148,7 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
         if best_acc < avg_valid_acc:
             best_acc = avg_valid_acc
             best_epoch = epoch + 1
-            torch.save(model, model_directory)
+            torch.save(model, 'models/c2_iter5_f+g.pt')
 
         epoch_end = time.time()
 
@@ -175,7 +178,7 @@ def plot_curve(history):
 
 
 # main
-num_epochs = 50
+num_epochs = 25
 trained_model, history = train_and_valid(model, loss_func, optimizer, scheduler, num_epochs)
-torch.save(history, 'models/' + dataset + '_history.pt')
-plot_curve(history)
+# torch.save(history, 'models/' + dataset + '_history.pt')
+# plot_curve(history)

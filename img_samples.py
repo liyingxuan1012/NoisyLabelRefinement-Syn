@@ -3,7 +3,7 @@ import random
 from PIL import Image
 
 
-folder_path = 'ImageNet100/val/n01592084'
+folder_path = 'ImageNet100-SD/n01847000'
 margin = 5
 
 files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith(('.png', '.jpg', '.JPEG'))]

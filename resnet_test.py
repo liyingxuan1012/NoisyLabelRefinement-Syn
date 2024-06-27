@@ -1,6 +1,7 @@
 import os
 import torch
 from torchvision import datasets, transforms
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from tqdm import tqdm
@@ -18,16 +19,18 @@ transform = transforms.Compose([
 ])
 
 # load data
-dataset = 'ImageNet100'
+dataset = '/scratch/ace14550vm/ImageNet100_noisy'
 real_directory = os.path.join(dataset, 'val')
-generated_directory = os.path.join('ImageNet100-SD')
-model_directory = os.path.join('models', dataset + '_model_best.pt')
+# generated_directory = '/scratch/ace14550vm/SD-xl-turbo/val'
+model_directory = 'models/c3_iter4_f+g_test.pt'
 
 # load model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
 model = torch.load(model_directory, map_location=device)
 model.eval()
 
+if isinstance(model, nn.DataParallel):
+    model = model.module
 
 def predict(test_directory):
     data = datasets.ImageFolder(root=test_directory, transform=transform)
@@ -84,18 +87,18 @@ def plot_class_accuracies(real_class_ids, real_class_acc, generated_class_ids, g
 
 # main
 real_class_acc, real_total_correct, real_data_size = predict(real_directory)
-generated_class_acc, generated_total_correct, generated_data_size = predict(generated_directory)
+# generated_class_acc, generated_total_correct, generated_data_size = predict(generated_directory)
 
 # calculate and print total accuracies
 real_total_acc = real_total_correct / real_data_size
-generated_total_acc = generated_total_correct / generated_data_size
+# generated_total_acc = generated_total_correct / generated_data_size
 print(f"Acc_real_total: {real_total_correct} / {real_data_size} = {real_total_acc:.4f}")
-print(f"Acc_generated_total: {generated_total_correct} / {generated_data_size} = {generated_total_acc:.4f}")
+# print(f"Acc_generated_total: {generated_total_correct} / {generated_data_size} = {generated_total_acc:.4f}")
 
 
-# print class accuracies
-for class_id in real_class_acc.keys():
-    print(f"Class: {class_id}, Acc_real: {real_class_acc[class_id]:.4f}, Acc_generated: {generated_class_acc[class_id]:.4f}")
+# # print class accuracies
+# for class_id in real_class_acc.keys():
+#     print(f"Class: {class_id}, Acc_real: {real_class_acc[class_id]:.4f}, Acc_generated: {generated_class_acc[class_id]:.4f}")
 
-# plot class accuracies
-plot_class_accuracies(list(real_class_acc.keys()), list(real_class_acc.values()), list(generated_class_acc.keys()), list(generated_class_acc.values()))
+# # plot class accuracies
+# plot_class_accuracies(list(real_class_acc.keys()), list(real_class_acc.values()), list(generated_class_acc.keys()), list(generated_class_acc.values()))
