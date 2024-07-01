@@ -19,10 +19,10 @@ transform = transforms.Compose([
 ])
 
 # load data
-dataset = '/scratch/ace14550vm/ImageNet100_noisy'
+dataset = '/home/ImageNet100_noisy'
 real_directory = os.path.join(dataset, 'val')
 # generated_directory = '/scratch/ace14550vm/SD-xl-turbo/val'
-model_directory = 'models/c3_iter4_f+g_test.pt'
+model_directory = 'models/c2_iter6_f+g.pt'
 
 # load model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 

@@ -2,8 +2,8 @@ import os
 import shutil
 
 
-src_folder = '/scratch/ace14550vm/SD-xl-turbo/train4'
-dst_folder = '/scratch/ace14550vm/SD-xl-turbo/train'
+src_folder = '/home/SD-xl-turbo/train'
+dst_folder = '/home/c3_iter6_700'
 
 # get category labels
 subfolders = next(os.walk(dst_folder))[1]

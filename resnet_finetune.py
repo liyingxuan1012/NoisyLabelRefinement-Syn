@@ -1,14 +1,11 @@
 import os
 import torch
-from torchvision import datasets, models, transforms
+from torchvision import datasets, transforms
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 import time
 import logging
-
-import numpy as np
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 
@@ -16,14 +13,14 @@ from tqdm import tqdm
 image_transforms = {
     'train': transforms.Compose([
         transforms.Resize(size=256),
-        transforms.CenterCrop(size=224),
+        transforms.CenterCrop(size=256),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
     ]),
     'valid': transforms.Compose([
         transforms.Resize(size=256),
-        transforms.CenterCrop(size=224),
+        transforms.CenterCrop(size=256),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406],
                              std=[0.229, 0.224, 0.225])
@@ -31,7 +28,7 @@ image_transforms = {
 }
 
 # configure logging
-logging.basicConfig(filename='noisy_pair.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='c3_iter6_f+g.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 
@@ -41,10 +38,10 @@ console_handler.setFormatter(formatter)
 logging.getLogger().addHandler(console_handler)
 
 # load data
-dataset = '/home/ImageNet100_noisy_pair'
-valid_directory = '/home/ImageNet100/val'
-train_directory = dataset
-model_directory = 'models_pretrained/noisy_pair.pt'
+dataset = '/home/ImageNet100/'
+valid_directory = os.path.join(dataset, 'val')
+train_directory = '/home/c3_iter6_700'
+model_directory = 'models/c3_iter5_f+g.pt'
 
 batch_size = 256
 num_classes = 100
@@ -56,21 +53,18 @@ data = {
 train_data_size = len(data['train'])
 valid_data_size = len(data['valid'])
 
-num_gpus = torch.cuda.device_count()
-train_data = DataLoader(data['train'], batch_size=batch_size, shuffle=True, num_workers=4*num_gpus)
-valid_data = DataLoader(data['valid'], batch_size=batch_size, shuffle=True, num_workers=4*num_gpus)
+train_data = DataLoader(data['train'], batch_size=batch_size, shuffle=True, num_workers=4)
+valid_data = DataLoader(data['valid'], batch_size=batch_size, shuffle=True, num_workers=4)
 # print(train_data_size, valid_data_size)
 
-# load pretrained ResNet-50
+# load pretrained model
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 if os.path.exists(model_directory):
     model = torch.load(model_directory, map_location=device)
     logging.info("Load model from {}".format(model_directory))
     fc_inputs = model.fc[0].in_features
 else:
-    model = models.resnet50(weights=None)
-    logging.info("Initialize ResNet-50 from scratch")
-    fc_inputs = model.fc.in_features
+    raise FileNotFoundError("Model directory does not exist: {}".format(model_directory))
 
 model.fc = nn.Sequential(
     nn.Linear(fc_inputs, 256),
@@ -87,8 +81,7 @@ model = model.to(device)
 
 loss_func = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 50], gamma=0.1)
-# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
 
 def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
@@ -148,7 +141,7 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
         if best_acc < avg_valid_acc:
             best_acc = avg_valid_acc
             best_epoch = epoch + 1
-            torch.save(model, model_directory)
+            torch.save(model, 'models/c3_iter6_f+g.pt')
 
         epoch_end = time.time()
 
@@ -159,25 +152,7 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
 
     return model, history
 
-def plot_curve(history):
-    history = np.array(history)
-    plt.plot(history[:, 0:2])
-    plt.legend(['Tr Loss', 'Val Loss'])
-    plt.xlabel('Epoch Number')
-    plt.ylabel('Loss')
-    plt.savefig(dataset + '_loss_curve.png')
-    plt.close()
-
-    plt.plot(history[:, 2:4])
-    plt.legend(['Tr Accuracy', 'Val Accuracy'])
-    plt.xlabel('Epoch Number')
-    plt.ylabel('Accuracy')
-    plt.savefig(dataset + '_accuracy_curve.png')
-    plt.close()
-
 
 # main
-num_epochs = 55
+num_epochs = 25
 trained_model, history = train_and_valid(model, loss_func, optimizer, scheduler, num_epochs)
-# torch.save(history, 'models/' + dataset + '_history.pt')
-plot_curve(history)
