@@ -8,7 +8,8 @@ import time
 import logging
 from tqdm import tqdm
 from img_noise_rate import compute_noise_rate
-from img_filter_sim import filter_images_iter0, filter_images_iter1
+from img_filter_baseline import baseline_iter0, baseline_iter1
+from img_filter_kmeans import kmeans_iter0, kmeans_iter1
 
 
 # image preprocessing
@@ -139,9 +140,9 @@ def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_it
 
         # remove the images with the lowest cosine similarity
         if i == 0:
-            filter_images_iter0(initial_data_dir, train_directory, model_directory, device)
+            baseline_iter0(initial_data_dir, train_directory, model_directory, device)
         else:
-            filter_images_iter1(initial_data_dir, train_directory, i, model_directory, device)
+            baseline_iter1(initial_data_dir, train_directory, i, model_directory, device)
 
         # calculate the noise rate of filtered images
         mismatched_images, total_images = compute_noise_rate(train_directory)
@@ -159,7 +160,7 @@ def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_it
 
 if __name__ == '__main__':
     # configure logging
-    logging.basicConfig(filename='noisy_sym60_iter.log', filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename='noisy_pair60_onestep_baseline.log', filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
 
@@ -172,11 +173,11 @@ if __name__ == '__main__':
     num_classes = 100
     num_epochs = 25
     start_iteration = 0
-    num_iterations = 8
+    num_iterations = 1
 
-    dataset_directory = '/home/ImageNet100_noisy_sym60'
-    train_directory = '/home/ImageNet100_noisy_sym60_iter'
+    dataset_directory = '/home/ImageNet100_noisy_pair60'
+    train_directory = '/home/ImageNet100_noisy_pair60_onestep_baseline'
     valid_directory = '/home/ImageNet100/val'
-    pretrained_model_directory = 'models_pretrained/noisy_sym60.pt'
-    best_model_directory = 'noisy_sym60_iter.pt'
+    pretrained_model_directory = 'models_pretrained/noisy_pair60.pt'
+    best_model_directory = 'noisy_pair60_onestep_baseline.pt'
     iterative_process(dataset_directory, pretrained_model_directory, start_iteration, num_iterations)
