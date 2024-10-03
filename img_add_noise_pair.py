@@ -4,11 +4,11 @@ import shutil
 
 
 # original dataset
-dataset_path = '/home/ImageNet100/train'
+dataset_path = 'data/CIFAR100/train'
 categories = os.listdir(dataset_path)
 
 # create noisy dataset
-noisy_dataset_path = '/home/ImageNet100_noisy_pair60'
+noisy_dataset_path = 'data/CIFAR100_noisy/noisy_pair60'
 os.makedirs(noisy_dataset_path, exist_ok=True)
 noise_rate = 0.6
 
@@ -16,7 +16,7 @@ noise_rate = 0.6
 random.shuffle(categories)
 noisy_target_categories = categories[1:] + categories[:1]
 noise_mapping = dict(zip(categories, noisy_target_categories))
-print(noise_mapping)
+# print(noise_mapping)
 
 for category in categories:
     category_path = os.path.join(dataset_path, category)

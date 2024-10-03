@@ -4,81 +4,106 @@ from torchvision import datasets, models, transforms
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torchvision.models.resnet import ResNet34_Weights
 import time
 import logging
+import argparse
 
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 
+parser = argparse.ArgumentParser()
+parser.add_argument('--train_dir', type=str, required=True)
+parser.add_argument('--valid_dir', type=str, required=True)
+parser.add_argument('--model_dir', type=str, required=True)
+parser.add_argument('--log_dir', type=str, required=True)
+parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--num_classes', type=int, default=100)
+args = parser.parse_args()
+
 # image preprocessing
+# image_transforms = {
+#     'train': transforms.Compose([
+#         transforms.Resize(size=256),
+#         transforms.CenterCrop(size=224),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.485, 0.456, 0.406],
+#                              std=[0.229, 0.224, 0.225])
+#     ]),
+#     'valid': transforms.Compose([
+#         transforms.Resize(size=256),
+#         transforms.CenterCrop(size=224),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.485, 0.456, 0.406],
+#                              std=[0.229, 0.224, 0.225])
+#     ])
+# }
 image_transforms = {
     'train': transforms.Compose([
-        transforms.Resize(size=256),
-        transforms.CenterCrop(size=224),
+        transforms.RandomResizedCrop(size=224),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(15),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+                             std=[0.2675, 0.2565, 0.2761])
     ]),
     'valid': transforms.Compose([
-        transforms.Resize(size=256),
-        transforms.CenterCrop(size=224),
+        transforms.Resize(size=224),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                             std=[0.229, 0.224, 0.225])
+        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+                             std=[0.2675, 0.2565, 0.2761])
     ])
 }
 
 # configure logging
-logging.basicConfig(filename='noisy_pair.log', filemode='w', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename=args.log_dir, filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
-
 logging.getLogger().addHandler(console_handler)
 
-# load data
-dataset = '/home/ImageNet100_noisy_pair'
-valid_directory = '/home/ImageNet100/val'
-train_directory = dataset
-model_directory = 'models_pretrained/noisy_pair.pt'
 
-batch_size = 256
-num_classes = 100
 data = {
-    'train': datasets.ImageFolder(root=train_directory, transform=image_transforms['train']),
-    'valid': datasets.ImageFolder(root=valid_directory, transform=image_transforms['valid'])
+    'train': datasets.ImageFolder(root=args.train_dir, transform=image_transforms['train']),
+    'valid': datasets.ImageFolder(root=args.valid_dir, transform=image_transforms['valid'])
 }
 
 train_data_size = len(data['train'])
 valid_data_size = len(data['valid'])
 
 num_gpus = torch.cuda.device_count()
-train_data = DataLoader(data['train'], batch_size=batch_size, shuffle=True, num_workers=4*num_gpus)
-valid_data = DataLoader(data['valid'], batch_size=batch_size, shuffle=True, num_workers=4*num_gpus)
+train_data = DataLoader(data['train'], batch_size=args.batch_size, shuffle=True, num_workers=4*num_gpus)
+valid_data = DataLoader(data['valid'], batch_size=args.batch_size, shuffle=True, num_workers=4*num_gpus)
 # print(train_data_size, valid_data_size)
 
-# load pretrained ResNet-50
+# load model
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
+model_directory = args.model_dir
 if os.path.exists(model_directory):
     model = torch.load(model_directory, map_location=device)
     logging.info("Load model from {}".format(model_directory))
     fc_inputs = model.fc[0].in_features
 else:
-    model = models.resnet50(weights=None)
-    logging.info("Initialize ResNet-50 from scratch")
+    # model = models.resnet50(weights=None)
+    # logging.info("Initialize ResNet-50 from scratch")
+    # model = models.resnet50(weights=ResNet50_Weights.DEFAULT)
+    # logging.info("Load ResNet-50 with pre-trained weights")
+    model = models.resnet34(weights=ResNet34_Weights.DEFAULT)
+    logging.info("Load ResNet-34 with pre-trained weights")
     fc_inputs = model.fc.in_features
 
-model.fc = nn.Sequential(
-    nn.Linear(fc_inputs, 256),
-    nn.ReLU(),
-    nn.Dropout(0.4),
-    nn.Linear(256, num_classes),
-    nn.LogSoftmax(dim=1)
-)
+# model.fc = nn.Sequential(
+#     nn.Linear(fc_inputs, 256),
+#     nn.ReLU(),
+#     nn.Dropout(0.4),
+#     nn.Linear(256, num_classes),
+#     nn.LogSoftmax(dim=1)
+# )
+model.fc = nn.Linear(fc_inputs, args.num_classes)
 
 if torch.cuda.device_count() > 1:
     logging.info(f"Using {torch.cuda.device_count()} GPUs")
@@ -86,9 +111,10 @@ if torch.cuda.device_count() > 1:
 model = model.to(device)
 
 loss_func = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 50], gamma=0.1)
-# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=20, gamma=0.1)
+# optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)
+# scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 50], gamma=0.1)
+optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 120, 160], gamma=0.2)
 
 
 def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
@@ -142,7 +168,7 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
 
         avg_valid_loss = valid_loss / valid_data_size
         avg_valid_acc = valid_acc / valid_data_size
-
+        
         history.append([avg_train_loss, avg_valid_loss, avg_train_acc, avg_valid_acc])
 
         if best_acc < avg_valid_acc:
@@ -162,22 +188,21 @@ def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
 def plot_curve(history):
     history = np.array(history)
     plt.plot(history[:, 0:2])
-    plt.legend(['Tr Loss', 'Val Loss'])
+    plt.legend(['Train Loss', 'Val Loss'])
     plt.xlabel('Epoch Number')
     plt.ylabel('Loss')
-    plt.savefig(dataset + '_loss_curve.png')
+    plt.savefig(args.train_dir + '_loss_curve.png')
     plt.close()
 
     plt.plot(history[:, 2:4])
-    plt.legend(['Tr Accuracy', 'Val Accuracy'])
+    plt.legend(['Train Accuracy', 'Val Accuracy'])
     plt.xlabel('Epoch Number')
     plt.ylabel('Accuracy')
-    plt.savefig(dataset + '_accuracy_curve.png')
+    plt.savefig(args.train_dir + '_accuracy_curve.png')
     plt.close()
 
 
 # main
-num_epochs = 55
+num_epochs = 200
 trained_model, history = train_and_valid(model, loss_func, optimizer, scheduler, num_epochs)
-# torch.save(history, 'models/' + dataset + '_history.pt')
 plot_curve(history)

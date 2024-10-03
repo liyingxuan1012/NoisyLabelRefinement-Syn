@@ -3,7 +3,7 @@ import random
 from PIL import Image
 
 
-folder_path = 'ImageNet100-SD/n01847000'
+folder_path = 'PMD/data/CIFAR100/train/00'
 margin = 5
 
 files = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith(('.png', '.jpg', '.JPEG'))]
@@ -27,4 +27,4 @@ for index, file in enumerate(files):
     y = index // num_columns * (single_image_height + margin)
     output_image.paste(img, (x, y))
 
-output_image.save('samples.jpg')
+output_image.save('img_samples.jpg')

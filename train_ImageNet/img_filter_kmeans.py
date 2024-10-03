@@ -39,7 +39,7 @@ def kmeans_iter0(src_dir, dst_dir, model_path, device):
         print('*' * 50)
         print(class_id, len(os.listdir(src_path)), len(os.listdir(dst_path)))
 
-        if len(os.listdir(src_path))-400 != len(os.listdir(dst_path)):
+        if len(os.listdir(src_path))-100 != len(os.listdir(dst_path)):
             # load images and extract features
             real_images, filenames = load_images(src_path, device)
             features = extract_features(real_images, feature_extractor)
@@ -50,7 +50,7 @@ def kmeans_iter0(src_dir, dst_dir, model_path, device):
             
             # find the images farthest from their cluster centers
             _, distances = pairwise_distances_argmin_min(features, cluster_centers)
-            farthest_images = np.argsort(distances)[-400:]
+            farthest_images = np.argsort(distances)[-100:]
 
             # remove the images farthest from cluster centers
             removed_images = [filenames[idx] for idx in farthest_images]
@@ -78,7 +78,7 @@ def kmeans_iter1(src_dir, dst_dir, i_iter, model_path, device):
 
         if len(os.listdir(src_path))-100*(i_iter+1) != len(os.listdir(dst_path)):
             # load images and extract features
-            real_images, filenames = load_images(src_path, device)
+            real_images, filenames = load_images(dst_path, device)
             features = extract_features(real_images, feature_extractor)
 
             # perform clustering
@@ -87,7 +87,7 @@ def kmeans_iter1(src_dir, dst_dir, i_iter, model_path, device):
             
             # find the images farthest from their cluster centers
             _, distances = pairwise_distances_argmin_min(features, cluster_centers)
-            farthest_images = np.argsort(distances)[-400:]
+            farthest_images = np.argsort(distances)[-100:]
 
             # remove the images farthest from cluster centers
             removed_images = [filenames[idx] for idx in farthest_images]

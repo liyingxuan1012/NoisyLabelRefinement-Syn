@@ -2,8 +2,8 @@ import os
 import shutil
 
 
-src_folder = '/home/SD-xl-turbo/train'
-dst_folder = '/home/c3_iter6_700'
+src_folder = '/home/CIFAR100-SD'
+dst_folder = 'data/cifar100_pair30_onestep'
 
 # get category labels
 subfolders = next(os.walk(dst_folder))[1]

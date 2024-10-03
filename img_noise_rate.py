@@ -11,7 +11,7 @@ def compute_noise_rate(data_path):
                 category_stats[folder] = {'total_images': 0, 'mismatched_images': 0}
             
             for filename in os.listdir(folder_path):
-                if filename.endswith('.JPEG'):
+                if '_' in filename:
                     category_stats[folder]['total_images'] += 1
                     if not filename.startswith(folder):
                         category_stats[folder]['mismatched_images'] += 1
@@ -33,7 +33,7 @@ def compute_noise_rate(data_path):
 
 
 if __name__ == '__main__':
-    data_path = '/home/ImageNet100_noisy_pair60'
+    data_path = 'PMD/data/CIFAR100_noisy/noisy_PMD70'
     mismatched_images, total_images = compute_noise_rate(data_path)
     
     # calculate and print the overall noise rate

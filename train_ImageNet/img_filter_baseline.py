@@ -55,21 +55,20 @@ def baseline_iter0(src_dir, dst_dir, model_path, device):
         print('*' * 50)
         print(class_id, len(os.listdir(src_path)), len(os.listdir(dst_path)))
 
-        if len(os.listdir(src_path))-800 != len(os.listdir(dst_path)):
+        if len(os.listdir(src_path))-100 != len(os.listdir(dst_path)):
             # load images
             real_images, filenames = load_images(src_path, device)
-            # generated_images, _ = load_images(f'/home/SD-xl-turbo/train/{class_id}', device)
             generated_images = real_images
 
             # compute cosine similarity for each real image against the average generated feature map
             image_similarities = compute_similarities(real_images, filenames, generated_images, feature_extractor)
             image_similarities.sort(key=lambda x: x[1])
-            lowest_similarity_images = image_similarities[:800]
+            lowest_similarity_images = image_similarities[:100]
             for image, sim in lowest_similarity_images:
                 print(f"Removing {image}: Similarity {sim:.4f}")
 
             # remove the images with the lowest cosine similarity
-            top_images = image_similarities[800:]
+            top_images = image_similarities[100:]
             for image, _ in top_images:
                 src_img_path = os.path.join(src_path, image)
                 dst_img_path = os.path.join(dst_path, image)
@@ -90,7 +89,6 @@ def baseline_iter1(src_dir, dst_dir, i_iter, model_path, device):
         if len(os.listdir(src_path))-100*(i_iter+1) != len(os.listdir(dst_path)):
             # load images
             real_images, filenames = load_images(dst_path, device)
-            # generated_images, _ = load_images(f'/home/SD-xl-turbo/train/{class_id}', device)
             generated_images = real_images
 
             # compute cosine similarity for each real image against the average generated feature map
