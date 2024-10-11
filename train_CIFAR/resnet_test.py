@@ -1,0 +1,110 @@
+import os
+import torch
+from torchvision import datasets, transforms
+import torch.nn as nn
+from torch.utils.data import DataLoader
+
+from tqdm import tqdm
+import numpy as np
+import matplotlib.pyplot as plt
+
+# # CIFAR-10
+# transform = transforms.Compose([
+#     transforms.Resize(size=32),
+#     transforms.ToTensor(),
+#     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+#     ])
+
+# CIFAR-100
+transform = transforms.Compose([
+    transforms.Resize(size=32),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+                        std=[0.2675, 0.2565, 0.2761])
+    ])
+
+# load data
+dataset = 'data/CIFAR100'
+real_directory = os.path.join(dataset, 'test')
+# generated_directory = '/scratch/ace14550vm/SD-xl-turbo/val'
+model_directory = 'models_pretrained/cifar100_PMD70.pt'
+
+# load model
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
+model = torch.load(model_directory, map_location=device)
+model.eval()
+
+if isinstance(model, nn.DataParallel):
+    model = model.module
+
+def predict(test_directory):
+    data = datasets.ImageFolder(root=test_directory, transform=transform)
+    class_to_idx = data.class_to_idx
+    idx_to_class = {v: k for k, v in class_to_idx.items()}
+    data_size = len(data)
+    test_data = DataLoader(data)
+    
+    # initialize class accuracy tracking
+    class_correct = {idx: [0, 0] for idx in class_to_idx.values()}
+    total_correct = 0
+
+    # test
+    with torch.no_grad():
+        for i, (inputs, labels) in enumerate(tqdm(test_data)):
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            outputs = model(inputs)
+            _, predictions = torch.max(outputs.data, 1)
+            correct_counts = predictions.eq(labels.data.view_as(predictions))
+
+            for label, correct in zip(labels, correct_counts):
+                class_correct[label.item()][0] += correct.item()
+                class_correct[label.item()][1] += 1
+                total_correct += correct.item()
+
+    # calculate class accuracies
+    class_accuracies = {idx_to_class[idx]: correct / total for idx, (correct, total) in class_correct.items()}
+    print(class_correct)
+
+    return class_accuracies, total_correct, data_size
+
+def plot_class_accuracies(real_class_ids, real_class_acc, generated_class_ids, generated_class_acc):
+    assert real_class_ids == generated_class_ids
+    num_classes = len(real_class_ids)
+
+    width = 0.3
+    index = np.arange(num_classes)
+    
+    plt.figure(figsize=(num_classes * 0.5, 5))
+    plt.bar(index - width/2, real_class_acc, width, label='Real Images')
+    plt.bar(index + width/2, generated_class_acc, width, label='Generated Images')
+
+    plt.xlabel('Class ID')
+    plt.ylabel('Accuracy')
+    plt.title('Class Accuracies')
+    plt.xticks(index, real_class_ids, rotation=60)
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1), fontsize='large')
+    plt.xlim(min(index) - 1, max(index + width) + 1)
+
+    plt.tight_layout()
+    plt.savefig('class_accuracies.png')
+    plt.close()
+
+
+# main
+real_class_acc, real_total_correct, real_data_size = predict(real_directory)
+# generated_class_acc, generated_total_correct, generated_data_size = predict(generated_directory)
+
+# calculate and print total accuracies
+real_total_acc = real_total_correct / real_data_size
+# generated_total_acc = generated_total_correct / generated_data_size
+print(f"Acc_real_total: {real_total_correct} / {real_data_size} = {real_total_acc:.4f}")
+# print(f"Acc_generated_total: {generated_total_correct} / {generated_data_size} = {generated_total_acc:.4f}")
+
+
+# # print class accuracies
+# for class_id in real_class_acc.keys():
+#     print(f"Class: {class_id}, Acc_real: {real_class_acc[class_id]:.4f}, Acc_generated: {generated_class_acc[class_id]:.4f}")
+
+# # plot class accuracies
+# plot_class_accuracies(list(real_class_acc.keys()), list(real_class_acc.values()), list(generated_class_acc.keys()), list(generated_class_acc.values()))

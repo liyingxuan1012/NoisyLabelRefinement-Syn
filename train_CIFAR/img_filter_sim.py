@@ -11,11 +11,20 @@ from feature_extractor import ResNet50FeatureExtractor, load_model
 
 
 def preprocess_image(img_path, device):
+    # # CIFAR-10
+    # transform = transforms.Compose([
+    #     transforms.Resize(size=32),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+    #     ])
+
+    # CIFAR-100
     transform = transforms.Compose([
         transforms.Resize(size=32),
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-    ])
+        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+                            std=[0.2675, 0.2565, 0.2761])
+        ])
     
     image = Image.open(img_path)
     if image.mode != 'RGB':
@@ -89,7 +98,7 @@ def filter_images_iter0(src_dir, dst_dir, model_path, device, add_generated=Fals
         print('*' * 50)
         print(class_id, num_real_imgs_src, num_real_imgs_dst)
 
-        if num_real_imgs_src-100 != num_real_imgs_dst:
+        if num_real_imgs_src-150 != num_real_imgs_dst:
             # load images
             real_images, filenames = load_images(src_path, device, is_generated=False)
             generated_images, _ = load_images(src_gen_path, device, is_generated=True)

@@ -25,17 +25,36 @@ parser.add_argument('--add_generated', default=False, action='store_true')
 args = parser.parse_args()
 
 
+# # CIFAR-10
+# image_transforms = {
+#     'train': transforms.Compose([
+#         transforms.RandomCrop(32, padding=4),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.ToTensor(),
+#         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+#     ]),
+#     'valid': transforms.Compose([
+#         transforms.Resize(size=32),
+#         transforms.ToTensor(),
+#         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+#     ])
+# }
+
+# CIFAR-100
 image_transforms = {
     'train': transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
+        transforms.RandomRotation(15),
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+                             std=[0.2675, 0.2565, 0.2761])
     ]),
     'valid': transforms.Compose([
         transforms.Resize(size=32),
         transforms.ToTensor(),
-        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+                             std=[0.2675, 0.2565, 0.2761])
     ])
 }
 
@@ -101,8 +120,9 @@ def train(data, model, device, loss_function, optimizer, scheduler, epochs):
         avg_valid_loss = valid_loss / valid_data_size
         avg_valid_acc = valid_acc / valid_data_size
 
-        # scheduler step is based on validation accuracy
-        scheduler.step(avg_valid_acc)
+        # # scheduler step is based on validation accuracy
+        # scheduler.step(avg_valid_acc)
+        scheduler.step()
         current_lr = scheduler.get_last_lr()[0]
         logging.info(f"Current Learning Rate: {current_lr}")
 
@@ -115,11 +135,11 @@ def train(data, model, device, loss_function, optimizer, scheduler, epochs):
             torch.save(model, best_model_directory)
             # test
             test_acc = test(model, test_data, device)
-        else:
-            epochs_no_improve += 1
-            if epochs_no_improve >= 25:
-                logging.info("Early stopping as no improvement in validation accuracy")
-                break
+        # else:
+        #     epochs_no_improve += 1
+        #     if epochs_no_improve >= 25:
+        #         logging.info("Early stopping as no improvement in validation accuracy")
+        #         break
             
         epoch_end = time.time()
 
@@ -170,8 +190,9 @@ def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_it
         logging.info(f"Using {torch.cuda.device_count()} GPUs")
 
         loss_function = nn.CrossEntropyLoss()
-        optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0001)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=10)
+        optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
+        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 50], gamma=0.1)
+        # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=10)
 
         # remove the images with the lowest cosine similarity
         if i == 0:
@@ -207,9 +228,9 @@ if __name__ == '__main__':
 
     batch_size = 128
     num_classes = 100
-    num_epochs = 50
+    num_epochs = 60
     start_iteration = 0
-    num_iterations = 3
+    num_iterations = 1
 
     
     dataset_directory = args.dataset_dir

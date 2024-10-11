@@ -4,7 +4,8 @@ from torchvision import datasets, models, transforms
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torchvision.models.resnet import ResNet34_Weights
+from torch.optim.lr_scheduler import _LRScheduler
+
 import time
 import logging
 import argparse
@@ -20,12 +21,28 @@ parser.add_argument('--model_dir', type=str, required=True)
 parser.add_argument('--log_dir', type=str, required=True)
 parser.add_argument('--batch_size', type=int, default=128)
 parser.add_argument('--num_classes', type=int, default=100)
+parser.add_argument('--warm', type=int, default=1, help='warm up training phase')
 args = parser.parse_args()
 
+# # CIFAR-10
+# image_transforms = {
+#     'train': transforms.Compose([
+#         transforms.RandomCrop(32, padding=4),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.ToTensor(),
+#         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+#     ]),
+#     'valid': transforms.Compose([
+#         transforms.Resize(size=32),
+#         transforms.ToTensor(),
+#         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+#     ])
+# }
 
+# CIFAR-100
 image_transforms = {
     'train': transforms.Compose([
-        transforms.RandomResizedCrop(size=224),
+        transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(15),
         transforms.ToTensor(),
@@ -33,7 +50,7 @@ image_transforms = {
                              std=[0.2675, 0.2565, 0.2761])
     ]),
     'valid': transforms.Compose([
-        transforms.Resize(size=224),
+        transforms.Resize(size=32),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
                              std=[0.2675, 0.2565, 0.2761])
@@ -48,6 +65,24 @@ console_handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 console_handler.setFormatter(formatter)
 logging.getLogger().addHandler(console_handler)
+
+
+class WarmUpLR(_LRScheduler):
+    """warmup_training learning rate scheduler
+    Args:
+        optimizer: optimzier(e.g. SGD)
+        total_iters: totoal_iters of warmup phase
+    """
+    def __init__(self, optimizer, total_iters, last_epoch=-1):
+
+        self.total_iters = total_iters
+        super().__init__(optimizer, last_epoch)
+
+    def get_lr(self):
+        """we will use the first m batches, and set the learning
+        rate to base_lr * m / total_iters
+        """
+        return [base_lr * self.last_epoch / (self.total_iters + 1e-8) for base_lr in self.base_lrs]
 
 
 def train(epochs):
@@ -65,8 +100,10 @@ def train(epochs):
         logging.info("Load model from {}".format(model_directory))
         fc_inputs = model.fc[0].in_features
     else:
-        model = models.resnet34(weights=ResNet34_Weights.DEFAULT)
-        logging.info("Load ResNet-34 with pre-trained weights")
+        from resnet import resnet34
+        model = resnet34()
+        # model = models.resnet34(weights=None)
+        logging.info("Initialize ResNet-34 from scratch")
         fc_inputs = model.fc.in_features
     model.fc = nn.Linear(fc_inputs, args.num_classes)
 
@@ -78,6 +115,8 @@ def train(epochs):
     loss_function = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 120, 160], gamma=0.2)
+    iter_per_epoch = len(train_data)
+    warmup_scheduler = WarmUpLR(optimizer, iter_per_epoch * args.warm)
 
     history = []
     best_acc = 0.0
@@ -109,8 +148,13 @@ def train(epochs):
             correct_counts = predictions.eq(labels.data.view_as(predictions))
             acc = torch.mean(correct_counts.type(torch.FloatTensor))
             train_acc += acc.item() * inputs.size(0)
-        scheduler.step()
+            
+            if epoch <= args.warm:
+                warmup_scheduler.step()
 
+        if epoch > args.warm:
+            scheduler.step()
+        
         with torch.no_grad():
             model.eval()
             for j, (inputs, labels) in enumerate(tqdm(valid_data)):
