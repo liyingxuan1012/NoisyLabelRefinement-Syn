@@ -4,7 +4,6 @@ models*
 logs
 *.log
 *.pt
-*.txt
 *.png
 *.jpg
 *.sh.o*
