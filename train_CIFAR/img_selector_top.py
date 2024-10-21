@@ -44,7 +44,8 @@ def predict_and_save_top50(test_directory, save_directory):
         for i, (inputs, labels) in enumerate(tqdm(test_data)):
             inputs = inputs.to(device)
             outputs = model(inputs)
-            scores = torch.max(outputs, 1)[0].cpu().numpy()
+            probabilities = torch.softmax(outputs, dim=1)
+            scores = torch.max(probabilities, 1)[0].cpu().numpy()
 
             for img_path, label, score in zip(data.imgs[i * test_data.batch_size:(i + 1) * test_data.batch_size], labels, scores):
                 class_scores[label.item()].append((img_path[0], score))

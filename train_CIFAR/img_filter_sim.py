@@ -98,7 +98,7 @@ def filter_images_iter0(src_dir, dst_dir, model_path, device, add_generated=Fals
         print('*' * 50)
         print(class_id, num_real_imgs_src, num_real_imgs_dst)
 
-        if num_real_imgs_src-150 != num_real_imgs_dst:
+        if num_real_imgs_src-100 != num_real_imgs_dst:
             # load images
             real_images, filenames = load_images(src_path, device, is_generated=False)
             generated_images, _ = load_images(src_gen_path, device, is_generated=True)
