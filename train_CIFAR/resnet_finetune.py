@@ -9,7 +9,7 @@ import time
 import logging
 import argparse
 from tqdm import tqdm
-from img_filter_sim import filter_images_iter0, filter_images_iter1
+from img_filter_sim import filter_images_iter0, filter_images_iter1, relabel_and_copy_images, random_discard_images
 
 sys.path.append('../')
 from img_noise_rate import compute_noise_rate
@@ -194,11 +194,16 @@ def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_it
         scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 50], gamma=0.1)
         # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=10)
 
-        # remove the images with the lowest cosine similarity
-        if i == 0:
-            filter_images_iter0(initial_data_dir, train_directory, model_directory, device, add_generated)
-        else:
-            filter_images_iter1(initial_data_dir, train_directory, i, model_directory, device, add_generated)
+        # # remove the images with the lowest cosine similarity
+        # if i == 0:
+        #     filter_images_iter0(initial_data_dir, train_directory, model_directory, device, add_generated, discard_count=300, similarity_threshold=0.8)
+        # else:
+        #     filter_images_iter1(initial_data_dir, train_directory, i, model_directory, device, add_generated)
+        
+        relabel_and_copy_images(initial_data_dir, train_directory, model_directory, device, similarity_threshold=0.8)
+        
+        # # randomly discard images from each subfolder
+        # random_discard_images(initial_data_dir, train_directory, discard_count=300)
 
         # calculate the noise rate of filtered images
         mismatched_images, total_images = compute_noise_rate(train_directory)

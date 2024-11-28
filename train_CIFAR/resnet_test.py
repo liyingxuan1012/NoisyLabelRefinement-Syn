@@ -8,6 +8,7 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 # # CIFAR-10
 # transform = transforms.Compose([
 #     transforms.Resize(size=32),
@@ -24,8 +25,9 @@ transform = transforms.Compose([
     ])
 
 # load data
-dataset = 'data/CIFAR100'
-real_directory = os.path.join(dataset, 'test')
+# dataset = 'data/CIFAR100'
+# real_directory = os.path.join(dataset, 'test')
+real_directory = '/home/feature-extractor/train_CIFAR/data/CIFAR100_noisy/noisy_PMD70'
 # generated_directory = '/scratch/ace14550vm/SD-xl-turbo/val'
 model_directory = 'models_pretrained/cifar100_PMD70.pt'
 

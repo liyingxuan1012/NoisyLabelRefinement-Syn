@@ -2,8 +2,8 @@ import os
 import shutil
 
 
-src_folder = '/home/CIFAR100-SD'
-dst_folder = 'data/cifar100_pair30_onestep'
+src_folder = '/home/sd-finetune/data_generated/clean-SD-resized'
+dst_folder = 'train_CIFAR/data/noisy_PMD70_onestep'
 
 # get category labels
 subfolders = next(os.walk(dst_folder))[1]
@@ -16,7 +16,7 @@ for subfolder in subfolders:
         src_file = os.path.join(src_subfolder, filename)
         dst_file = os.path.join(target_subfolder, filename)
 
-        if not os.path.exists(dst_file):
-            shutil.copy(src_file, dst_file)
-        else:
-            continue
+        # if not os.path.exists(dst_file):
+        shutil.copy(src_file, dst_file)
+        # else:
+        #     continue

@@ -16,9 +16,9 @@ transform = transforms.Compose([
 ])
 
 # load data
-data_directory = 'train_CIFAR/data/CIFAR100_noisy/noisy_PMD70'
-model_directory = 'train_CIFAR/models_pretrained/cifar100_PMD70.pt'
-save_directory = 'PMD70_top50'
+data_directory = 'train_CIFAR/data/CIFAR100_noisy/noisy_PMD35'
+model_directory = 'train_CIFAR/models_pretrained/cifar100_PMD35.pt'
+save_directory = 'PMD35_top50'
 
 # load model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 
