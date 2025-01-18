@@ -4,11 +4,11 @@ import shutil
 
 
 # original dataset
-dataset_path = 'data/CIFAR100/train'
+dataset_path = 'data/ImageNet100/train'
 categories = os.listdir(dataset_path)
 
 # create noisy dataset
-noisy_dataset_path = 'data/CIFAR100_noisy/noisy_pair60'
+noisy_dataset_path = 'data/ImageNet100_noisy/noisy_pair60'
 os.makedirs(noisy_dataset_path, exist_ok=True)
 noise_rate = 0.6
 

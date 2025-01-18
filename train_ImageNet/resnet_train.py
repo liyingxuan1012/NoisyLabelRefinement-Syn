@@ -4,7 +4,7 @@ from torchvision import datasets, models, transforms
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torchvision.models.resnet import ResNet34_Weights
+from torchvision.models.resnet import ResNet50_Weights
 import time
 import logging
 import argparse
@@ -19,43 +19,31 @@ parser.add_argument('--train_dir', type=str, required=True)
 parser.add_argument('--valid_dir', type=str, required=True)
 parser.add_argument('--model_dir', type=str, required=True)
 parser.add_argument('--log_dir', type=str, required=True)
-parser.add_argument('--batch_size', type=int, default=128)
+parser.add_argument('--batch_size', type=int, default=256)
 parser.add_argument('--num_classes', type=int, default=100)
 args = parser.parse_args()
 
+
 # image preprocessing
-# image_transforms = {
-#     'train': transforms.Compose([
-#         transforms.Resize(size=256),
-#         transforms.CenterCrop(size=224),
-#         transforms.ToTensor(),
-#         transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                              std=[0.229, 0.224, 0.225])
-#     ]),
-#     'valid': transforms.Compose([
-#         transforms.Resize(size=256),
-#         transforms.CenterCrop(size=224),
-#         transforms.ToTensor(),
-#         transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                              std=[0.229, 0.224, 0.225])
-#     ])
-# }
 image_transforms = {
     'train': transforms.Compose([
-        transforms.RandomResizedCrop(size=224),
+        transforms.Resize(size=256),
+        transforms.CenterCrop(size=224),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(15),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                             std=[0.2675, 0.2565, 0.2761])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
     ]),
     'valid': transforms.Compose([
-        transforms.Resize(size=224),
+        transforms.Resize(size=256),
+        transforms.CenterCrop(size=224),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                             std=[0.2675, 0.2565, 0.2761])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
     ])
 }
+
 
 # configure logging
 logging.basicConfig(filename=args.log_dir, filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -78,7 +66,6 @@ valid_data_size = len(data['valid'])
 num_gpus = torch.cuda.device_count()
 train_data = DataLoader(data['train'], batch_size=args.batch_size, shuffle=True, num_workers=4*num_gpus)
 valid_data = DataLoader(data['valid'], batch_size=args.batch_size, shuffle=True, num_workers=4*num_gpus)
-# print(train_data_size, valid_data_size)
 
 # load model
 device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
@@ -88,12 +75,10 @@ if os.path.exists(model_directory):
     logging.info("Load model from {}".format(model_directory))
     fc_inputs = model.fc[0].in_features
 else:
-    # model = models.resnet50(weights=None)
-    # logging.info("Initialize ResNet-50 from scratch")
     # model = models.resnet50(weights=ResNet50_Weights.DEFAULT)
     # logging.info("Load ResNet-50 with pre-trained weights")
-    model = models.resnet34(weights=ResNet34_Weights.DEFAULT)
-    logging.info("Load ResNet-34 with pre-trained weights")
+    model = models.resnet50(weights=None)
+    logging.info("Initialize ResNet-50 from scratch")
     fc_inputs = model.fc.in_features
 
 # model.fc = nn.Sequential(
@@ -111,10 +96,8 @@ if torch.cuda.device_count() > 1:
 model = model.to(device)
 
 loss_func = nn.CrossEntropyLoss()
-# optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)
-# scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 50], gamma=0.1)
-optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=5e-4)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[60, 120, 160], gamma=0.2)
+optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 50], gamma=0.1)
 
 
 def train_and_valid(model, loss_function, optimizer, scheduler, epochs):
@@ -203,6 +186,6 @@ def plot_curve(history):
 
 
 # main
-num_epochs = 200
+num_epochs = 60
 trained_model, history = train_and_valid(model, loss_func, optimizer, scheduler, num_epochs)
 plot_curve(history)

@@ -10,24 +10,19 @@ import matplotlib.pyplot as plt
 
 
 # image preprocessing
-# transform = transforms.Compose([
-#     transforms.Resize(size=256),
-#     transforms.CenterCrop(size=224),
-#     transforms.ToTensor(),
-#     transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                             std=[0.229, 0.224, 0.225])
-# ])
 transform = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                             std=[0.2675, 0.2565, 0.2761])
-    ])
+    transforms.Resize(size=256),
+    transforms.CenterCrop(size=224),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                            std=[0.229, 0.224, 0.225])
+])
+
 
 # load data
-dataset = 'data/CIFAR100'
-real_directory = os.path.join(dataset, 'test')
+real_directory = 'data/ImageNet100/val'
 # generated_directory = '/scratch/ace14550vm/SD-xl-turbo/val'
-model_directory = 'models_pretrained/cifar100_clean.pt'
+model_directory = 'models_pretrained/clean.pt'
 
 # load model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 

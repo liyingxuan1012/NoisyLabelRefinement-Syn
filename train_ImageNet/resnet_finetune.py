@@ -1,4 +1,5 @@
 import os
+import sys
 import torch
 from torchvision import datasets, transforms
 import torch.nn as nn
@@ -8,51 +9,39 @@ import time
 import logging
 import argparse
 from tqdm import tqdm
+from img_filter_sim import filter_images_iter0, filter_images_iter1, relabel_and_copy_images, random_discard_images
+
+sys.path.append('../')
 from img_noise_rate import compute_noise_rate
-from img_filter_sim import filter_images_iter0, filter_images_iter1
 
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_dir', type=str, required=True)
 parser.add_argument('--train_dir', type=str, required=True)
-parser.add_argument('--valid_dir', type=str, required=True)
 parser.add_argument('--pretrained_model_dir', type=str, required=True)
 parser.add_argument('--best_model_dir', type=str, required=True)
 parser.add_argument('--log_dir', type=str, required=True)
+parser.add_argument('--add_generated', default=False, action='store_true')
 args = parser.parse_args()
 
 
 # image preprocessing
-# image_transforms = {
-#     'train': transforms.Compose([
-#         transforms.Resize(size=256),
-#         transforms.CenterCrop(size=224),
-#         transforms.ToTensor(),
-#         transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                              std=[0.229, 0.224, 0.225])
-#     ]),
-#     'valid': transforms.Compose([
-#         transforms.Resize(size=256),
-#         transforms.CenterCrop(size=224),
-#         transforms.ToTensor(),
-#         transforms.Normalize(mean=[0.485, 0.456, 0.406],
-#                              std=[0.229, 0.224, 0.225])
-#     ])
-# }
 image_transforms = {
     'train': transforms.Compose([
-        transforms.RandomResizedCrop(size=224),
+        transforms.Resize(size=256),
+        transforms.CenterCrop(size=224),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(15),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                             std=[0.2675, 0.2565, 0.2761])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
     ]),
     'valid': transforms.Compose([
-        transforms.Resize(size=224),
+        transforms.Resize(size=256),
+        transforms.CenterCrop(size=224),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                             std=[0.2675, 0.2565, 0.2761])
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
     ])
 }
 
@@ -95,7 +84,6 @@ def train_and_valid(data, model, device, loss_function, optimizer, scheduler, ep
             correct_counts = predictions.eq(labels.data.view_as(predictions))
             acc = torch.mean(correct_counts.type(torch.FloatTensor))
             train_acc += acc.item() * inputs.size(0)
-        # scheduler.step()
 
         with torch.no_grad():
             model.eval()
@@ -116,8 +104,7 @@ def train_and_valid(data, model, device, loss_function, optimizer, scheduler, ep
         avg_valid_loss = valid_loss / valid_data_size
         avg_valid_acc = valid_acc / valid_data_size
 
-        # scheduler step is based on validation accuracy
-        scheduler.step(avg_valid_acc)
+        scheduler.step()
         current_lr = scheduler.get_last_lr()[0]
         logging.info(f"Current Learning Rate: {current_lr}")
 
@@ -126,13 +113,7 @@ def train_and_valid(data, model, device, loss_function, optimizer, scheduler, ep
         if best_acc < avg_valid_acc:
             best_acc = avg_valid_acc
             best_epoch = epoch + 1
-            epochs_no_improve = 0
             torch.save(model, best_model_directory)
-        else:
-            epochs_no_improve += 1
-            if epochs_no_improve >= 25:
-                logging.info("Early stopping as no improvement in validation accuracy")
-                break
             
         epoch_end = time.time()
 
@@ -143,7 +124,7 @@ def train_and_valid(data, model, device, loss_function, optimizer, scheduler, ep
 
     return model, history
 
-def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_iter):
+def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_iter, add_generated=False):
     device = torch.device('cuda' if torch.cuda.is_available() else "cpu")
 
     for i in range(start_iter, num_iter):
@@ -159,13 +140,7 @@ def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_it
 
         original_model = model.module if isinstance(model, nn.DataParallel) else model
         fc_inputs = original_model.fc.in_features
-        # original_model.fc = nn.Sequential(
-        #     nn.Linear(fc_inputs, 256),
-        #     nn.ReLU(),
-        #     nn.Dropout(0.4),
-        #     nn.Linear(256, num_classes),
-        #     nn.LogSoftmax(dim=1)
-        # )
+        
         original_model.fc = nn.Linear(fc_inputs, num_classes)
 
         model = original_model.to(device)
@@ -174,16 +149,19 @@ def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_it
         logging.info(f"Using {torch.cuda.device_count()} GPUs")
 
         loss_function = nn.CrossEntropyLoss()
-        # optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)
-        # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-        optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.0001)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=10)
+        optimizer = optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.001)
+        scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
-        # remove the images with the lowest cosine similarity
-        if i == 0:
-            filter_images_iter0(initial_data_dir, train_directory, model_directory, device)
-        else:
-            filter_images_iter1(initial_data_dir, train_directory, i, model_directory, device)
+        # # remove the images with the lowest cosine similarity
+        # if i == 0:
+        #     filter_images_iter0(initial_data_dir, train_directory, model_directory, device, add_generated, discard_count=300, similarity_threshold=0.8)
+        # else:
+        #     filter_images_iter1(initial_data_dir, train_directory, i, model_directory, device, add_generated)
+        
+        relabel_and_copy_images(initial_data_dir, train_directory, model_directory, device, similarity_threshold=0.6)
+        
+        # # randomly discard images from each subfolder
+        # random_discard_images(initial_data_dir, train_directory, discard_count=300)
 
         # calculate the noise rate of filtered images
         mismatched_images, total_images = compute_noise_rate(train_directory)
@@ -210,17 +188,17 @@ if __name__ == '__main__':
     logging.getLogger().addHandler(console_handler)
 
 
-    batch_size = 128
+    batch_size = 256
     num_classes = 100
-    num_epochs = 50
+    num_epochs = 25
     start_iteration = 0
-    num_iterations = 3
+    num_iterations = 1
 
     
     dataset_directory = args.dataset_dir
     train_directory = args.train_dir
-    valid_directory = args.valid_dir
+    valid_directory = "data/ImageNet100/val"
     pretrained_model_directory = args.pretrained_model_dir
     best_model_directory = args.best_model_dir
     
-    iterative_process(dataset_directory, pretrained_model_directory, start_iteration, num_iterations)
+    iterative_process(dataset_directory, pretrained_model_directory, start_iteration, num_iterations, add_generated=args.add_generated)
