@@ -3,10 +3,10 @@ import numpy as np
 from PIL import Image
 
 
-def parse_pickle(rawdata, noisy_labels, rootdir):
+def parse_pickle(rawdata, num_class, noisy_labels, rootdir):
     if not os.path.exists(rootdir):
         os.mkdir(rootdir) 
-    for i in range(100):
+    for i in range(num_class):
         classdir = rootdir + "/" + f"{i:02d}"
         if not os.path.exists(classdir):
             os.mkdir(classdir)    
@@ -28,12 +28,36 @@ def parse_pickle(rawdata, noisy_labels, rootdir):
             img.save(f"{rootdir}/{label:02d}/{gt_label:02d}_{filename}")
 
 
-with open("cifar-100-python/train", "rb") as fp:
-    train = pickle.load(fp, encoding="latin-1")
-with open("cifar-100-python/test", "rb") as fp:
-    test = pickle.load(fp, encoding="latin-1")
+# # CIFAR-100
+# with open("train_CIFAR/data/cifar-100-python/train", "rb") as fp:
+#     train = pickle.load(fp, encoding="latin-1")
+# # with open("train_CIFAR/data/cifar-100-python/test", "rb") as fp:
+# #     test = pickle.load(fp, encoding="latin-1")
 
-noisy_labels = np.load('cifar100-1-0.70.npy')
+# noisy_labels = np.load('train_CIFAR/data/noise_label/cifar100-1-0.35_A_0.3.npy')
 
-parse_pickle(train, noisy_labels, "CIFAR100_noisy/noisy_PMD70")
-# parse_pickle(test, "CIFAR100/test")
+# parse_pickle(train, 100, noisy_labels, "train_CIFAR/data/CIFAR100_noisy/noisy_PMD35_A30")
+# # parse_pickle(test, 100, None, "CIFAR100/test")
+
+
+# CIFAR-10
+train_data = []
+for i in range(1, 6):
+    with open(f"train_CIFAR/data/cifar-10-batches-py/data_batch_{i}", "rb") as fp:
+        batch = pickle.load(fp, encoding="latin-1")
+        train_data.append(batch)
+
+merged_train_data = {
+    "filenames": [],
+    "fine_labels": [],
+    "data": np.empty((0, 3072), dtype=np.uint8)
+}
+
+for batch in train_data:
+    merged_train_data["filenames"].extend(batch["filenames"])
+    merged_train_data["fine_labels"].extend(batch["labels"])
+    merged_train_data["data"] = np.vstack((merged_train_data["data"], batch["data"]))
+
+noisy_labels = np.load('train_CIFAR/data/noise_label/cifar10-1-0.35_A_0.3.npy')
+
+parse_pickle(merged_train_data, 10, noisy_labels, "train_CIFAR/data/CIFAR10_noisy/noisy_PMD35_A30")

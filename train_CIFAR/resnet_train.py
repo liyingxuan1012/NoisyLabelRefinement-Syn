@@ -20,42 +20,42 @@ parser.add_argument('--train_dir', type=str, required=True)
 parser.add_argument('--model_dir', type=str, required=True)
 parser.add_argument('--log_dir', type=str, required=True)
 parser.add_argument('--batch_size', type=int, default=128)
-parser.add_argument('--num_classes', type=int, default=100)
+parser.add_argument('--num_classes', type=int, default=10)
 parser.add_argument('--warm', type=int, default=1, help='warm up training phase')
 args = parser.parse_args()
 
-# # CIFAR-10
-# image_transforms = {
-#     'train': transforms.Compose([
-#         transforms.RandomCrop(32, padding=4),
-#         transforms.RandomHorizontalFlip(),
-#         transforms.ToTensor(),
-#         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-#     ]),
-#     'valid': transforms.Compose([
-#         transforms.Resize(size=32),
-#         transforms.ToTensor(),
-#         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-#     ])
-# }
-
-# CIFAR-100
+# CIFAR-10
 image_transforms = {
     'train': transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(15),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                             std=[0.2675, 0.2565, 0.2761])
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ]),
     'valid': transforms.Compose([
         transforms.Resize(size=32),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                             std=[0.2675, 0.2565, 0.2761])
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 }
+
+# # CIFAR-100
+# image_transforms = {
+#     'train': transforms.Compose([
+#         transforms.RandomCrop(32, padding=4),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.RandomRotation(15),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+#                              std=[0.2675, 0.2565, 0.2761])
+#     ]),
+#     'valid': transforms.Compose([
+#         transforms.Resize(size=32),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+#                              std=[0.2675, 0.2565, 0.2761])
+#     ])
+# }
 
 # configure logging
 logging.basicConfig(filename=args.log_dir, filemode='a', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -227,8 +227,8 @@ def plot_curve(history):
 # load datasets
 data = {
     'train': datasets.ImageFolder(root=args.train_dir, transform=image_transforms['train']),
-    'valid': datasets.ImageFolder(root="data/CIFAR100/val", transform=image_transforms['valid']),
-    'test': datasets.ImageFolder(root="data/CIFAR100/test", transform=image_transforms['valid'])
+    'valid': datasets.ImageFolder(root="data/CIFAR10/val", transform=image_transforms['valid']),
+    'test': datasets.ImageFolder(root="data/CIFAR10/test", transform=image_transforms['valid'])
 }
 
 train_data_size = len(data['train'])
@@ -236,4 +236,4 @@ valid_data_size = len(data['valid'])
 
 num_epochs = 200
 trained_model, history = train(num_epochs)
-plot_curve(history)
+# plot_curve(history)

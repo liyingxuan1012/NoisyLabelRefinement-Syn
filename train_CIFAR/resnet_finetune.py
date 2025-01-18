@@ -25,38 +25,38 @@ parser.add_argument('--add_generated', default=False, action='store_true')
 args = parser.parse_args()
 
 
-# # CIFAR-10
-# image_transforms = {
-#     'train': transforms.Compose([
-#         transforms.RandomCrop(32, padding=4),
-#         transforms.RandomHorizontalFlip(),
-#         transforms.ToTensor(),
-#         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-#     ]),
-#     'valid': transforms.Compose([
-#         transforms.Resize(size=32),
-#         transforms.ToTensor(),
-#         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-#     ])
-# }
-
-# CIFAR-100
+# CIFAR-10
 image_transforms = {
     'train': transforms.Compose([
         transforms.RandomCrop(32, padding=4),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(15),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                             std=[0.2675, 0.2565, 0.2761])
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ]),
     'valid': transforms.Compose([
         transforms.Resize(size=32),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                             std=[0.2675, 0.2565, 0.2761])
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 }
+
+# # CIFAR-100
+# image_transforms = {
+#     'train': transforms.Compose([
+#         transforms.RandomCrop(32, padding=4),
+#         transforms.RandomHorizontalFlip(),
+#         transforms.RandomRotation(15),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+#                              std=[0.2675, 0.2565, 0.2761])
+#     ]),
+#     'valid': transforms.Compose([
+#         transforms.Resize(size=32),
+#         transforms.ToTensor(),
+#         transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+#                              std=[0.2675, 0.2565, 0.2761])
+#     ])
+# }
 
 
 def train(data, model, device, loss_function, optimizer, scheduler, epochs):
@@ -72,7 +72,6 @@ def train(data, model, device, loss_function, optimizer, scheduler, epochs):
     history = []
     best_acc = 0.0
     best_epoch = 0
-    epochs_no_improve = 0
 
     # train
     for epoch in range(epochs):
@@ -120,8 +119,6 @@ def train(data, model, device, loss_function, optimizer, scheduler, epochs):
         avg_valid_loss = valid_loss / valid_data_size
         avg_valid_acc = valid_acc / valid_data_size
 
-        # # scheduler step is based on validation accuracy
-        # scheduler.step(avg_valid_acc)
         scheduler.step()
         current_lr = scheduler.get_last_lr()[0]
         logging.info(f"Current Learning Rate: {current_lr}")
@@ -131,15 +128,9 @@ def train(data, model, device, loss_function, optimizer, scheduler, epochs):
         if best_acc < avg_valid_acc:
             best_acc = avg_valid_acc
             best_epoch = epoch + 1
-            epochs_no_improve = 0
             torch.save(model, best_model_directory)
             # test
             test_acc = test(model, test_data, device)
-        # else:
-        #     epochs_no_improve += 1
-        #     if epochs_no_improve >= 25:
-        #         logging.info("Early stopping as no improvement in validation accuracy")
-        #         break
             
         epoch_end = time.time()
 
@@ -191,8 +182,7 @@ def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_it
 
         loss_function = nn.CrossEntropyLoss()
         optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9, weight_decay=1e-4)
-        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40, 50], gamma=0.1)
-        # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=10)
+        scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[20, 40], gamma=0.1)
 
         # # remove the images with the lowest cosine similarity
         # if i == 0:
@@ -200,7 +190,7 @@ def iterative_process(initial_data_dir, pretrained_model_dir, start_iter, num_it
         # else:
         #     filter_images_iter1(initial_data_dir, train_directory, i, model_directory, device, add_generated)
         
-        relabel_and_copy_images(initial_data_dir, train_directory, model_directory, device, similarity_threshold=0.8)
+        relabel_and_copy_images(initial_data_dir, train_directory, model_directory, device, similarity_threshold=0.6)
         
         # # randomly discard images from each subfolder
         # random_discard_images(initial_data_dir, train_directory, discard_count=300)
@@ -232,16 +222,16 @@ if __name__ == '__main__':
 
 
     batch_size = 128
-    num_classes = 100
-    num_epochs = 60
+    num_classes = 10
+    num_epochs = 50
     start_iteration = 0
     num_iterations = 1
 
     
     dataset_directory = args.dataset_dir
     train_directory = args.train_dir
-    valid_directory = "data/CIFAR100/val"
-    test_directory = "data/CIFAR100/test"
+    valid_directory = "data/CIFAR10/val"
+    test_directory = "data/CIFAR10/test"
     pretrained_model_directory = args.pretrained_model_dir
     best_model_directory = args.best_model_dir
     

@@ -1,5 +1,6 @@
 __pycache__
-cifar100*
+cifar*
+ImageNet*
 models*
 logs
 *.log

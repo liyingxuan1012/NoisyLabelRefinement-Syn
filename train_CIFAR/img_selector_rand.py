@@ -4,8 +4,8 @@ import shutil
 
 
 # 原始数据集路径和目标路径
-source_dir = 'train_CIFAR/data/CIFAR100_noisy/noisy_PMD70'
-target_dir = 'noisy_PMD70_rand50'
+source_dir = 'train_CIFAR/data/CIFAR100_noisy/noisy_PMD35'
+target_dir = 'PMD35_rand50'
 
 # 创建目标路径下的子文件夹
 os.makedirs(target_dir, exist_ok=True)

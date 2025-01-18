@@ -12,20 +12,20 @@ from feature_extractor import ResNet50FeatureExtractor, load_model
 
 
 def preprocess_image(img_path, device):
-    # # CIFAR-10
-    # transform = transforms.Compose([
-    #     transforms.Resize(size=32),
-    #     transforms.ToTensor(),
-    #     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-    #     ])
-
-    # CIFAR-100
+    # CIFAR-10
     transform = transforms.Compose([
         transforms.Resize(size=32),
         transforms.ToTensor(),
-        transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                            std=[0.2675, 0.2565, 0.2761])
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
         ])
+
+    # # CIFAR-100
+    # transform = transforms.Compose([
+    #     transforms.Resize(size=32),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+    #                         std=[0.2675, 0.2565, 0.2761])
+    #     ])
     
     image = Image.open(img_path)
     if image.mode != 'RGB':
@@ -81,75 +81,6 @@ def add_generated_images(src_gen_dir, dst_dir, iter_idx):
         src_img_path = os.path.join(src_gen_dir, f'{i:05d}.png')
         dst_img_path = os.path.join(dst_dir, f'{i:05d}.png')
         shutil.copy2(src_img_path, dst_img_path)
-
-# def filter_images_iter0(src_dir, dst_dir, model_path, device, add_generated=False, discard_count=100, similarity_threshold=0.8):
-#     model = load_model(model_path, device)
-#     feature_extractor = ResNet50FeatureExtractor(model).to(device)
-
-#     os.makedirs(dst_dir, exist_ok=True)
-
-#     # step 1: extract features for each generated image from all classes
-#     generated_features = {}
-#     for class_id in os.listdir(src_dir):
-#         src_gen_path = f'/home/sd-finetune/data_generated/clean-SD-resized/{class_id}'
-#         generated_images, _ = load_images(src_gen_path, device, is_generated=True)
-#         generated_features[class_id] = compute_average_feature_map(generated_images, feature_extractor).cpu().detach().numpy().flatten()
-
-#     for class_id in os.listdir(src_dir):
-#         src_path = os.path.join(src_dir, class_id)
-#         dst_path = os.path.join(dst_dir, class_id)
-#         os.makedirs(dst_path, exist_ok=True)
-
-#         num_real_imgs_src = len(os.listdir(src_path))
-#         num_real_imgs_dst = count_real_imgs(dst_path)
-#         print('*' * 50)
-#         print(class_id, num_real_imgs_src, num_real_imgs_dst)
-
-#         if num_real_imgs_src - discard_count != num_real_imgs_dst:
-#             # step 2: load real images and extract features
-#             real_images, filenames = load_images(src_path, device, is_generated=False)
-            
-#             image_labels_confidences = []
-#             for real_img, filename in zip(real_images, filenames):
-#                 real_feature = feature_extractor(real_img)
-#                 real_feature = real_feature.squeeze(0).cpu().detach().numpy().flatten()
-    
-#                 # step 3: compute cosine similarity with generated features from all classes
-#                 similarities = []
-#                 for gen_class, gen_feature in generated_features.items():
-#                     similarity = np.dot(real_feature, gen_feature) / (np.linalg.norm(real_feature) * np.linalg.norm(gen_feature))
-#                     similarities.append(similarity)
-                
-#                 similarities = np.array(similarities)
-                
-#                 max_similarity = np.max(similarities)
-#                 predicted_label = list(generated_features.keys())[np.argmax(similarities)]
-#                 final_label = predicted_label if max_similarity >= similarity_threshold else class_id
-#                 image_labels_confidences.append((filename, predicted_label, max_similarity, final_label))
-
-#             # step 4: sort by new labels and confidences
-#             incorrect_images = [item for item in image_labels_confidences if item[3] != class_id]
-#             correct_images = [item for item in image_labels_confidences if item[3] == class_id]
-#             # sort correct images by confidence (ascending)
-#             correct_images.sort(key=lambda x: x[2])
-
-#             # step 5: select images to remove
-#             images_to_remove = incorrect_images[:discard_count] if len(incorrect_images) >= discard_count else incorrect_images + correct_images[:discard_count - len(incorrect_images)]
-#             for image, predicted_label, confidence, final_label in images_to_remove:
-#                 print(f"Removing {image}: Predicted Label {predicted_label}, Confidence {confidence:.4f}, Final Label {final_label}")
-
-#             # remove selected images and copy remaining images to destination directory
-#             images_to_keep = set(filenames) - set([item[0] for item in images_to_remove])
-#             for image in images_to_keep:
-#                 src_img_path = os.path.join(src_path, image)
-#                 dst_img_path = os.path.join(dst_path, image)
-#                 shutil.copy2(src_img_path, dst_img_path)
-
-#             # add generated images if specified
-#             if add_generated:
-#                 add_generated_images(src_gen_path, dst_path, 0)
-#         else:
-#             continue
 
 def filter_images_iter0(src_dir, dst_dir, model_path, device, add_generated=False, discard_count=100, similarity_threshold=0.8):
     model = load_model(model_path, device)
@@ -268,60 +199,7 @@ def filter_images_iter1(src_dir, dst_dir, i_iter, model_path, device, add_genera
         else:
             continue
 
-# def relabel_and_copy_images(src_dir, dst_dir, model_path, device, similarity_threshold=0.8):
-#     model = load_model(model_path, device)
-#     feature_extractor = ResNet50FeatureExtractor(model).to(device)
-
-#     os.makedirs(dst_dir, exist_ok=True)
-
-#     # step 1: extract features for each generated image from all classes
-#     generated_features = {}
-#     for class_id in os.listdir(src_dir):
-#         src_gen_path = f'/home/sd-finetune/data_generated/PMD70_top50_drop-SD-resized/{class_id}'
-#         generated_images, _ = load_images(src_gen_path, device, is_generated=True)
-#         generated_features[class_id] = compute_average_feature_map(generated_images, feature_extractor).cpu().detach().numpy().flatten()
-
-#     for class_id in os.listdir(src_dir):
-#         src_path = os.path.join(src_dir, class_id)
-#         dst_path = os.path.join(dst_dir, class_id)
-#         os.makedirs(dst_path, exist_ok=True)
-
-#         num_real_imgs_src = len(os.listdir(src_path))
-#         num_real_imgs_dst = count_real_imgs(dst_path)
-#         print('*' * 50)
-#         print(class_id, num_real_imgs_src, num_real_imgs_dst)
-
-#         # step 2: load real images and extract features
-#         real_images, filenames = load_images(src_path, device, is_generated=False)
-
-#         image_labels_confidences = []
-#         for real_img, filename in zip(real_images, filenames):
-#             real_feature = feature_extractor(real_img)
-#             real_feature = real_feature.squeeze(0).cpu().detach().numpy().flatten()
-
-#             # step 3: compute cosine similarity with generated features from all classes
-#             similarities = []
-#             for gen_class, gen_feature in generated_features.items():
-#                 similarity = np.dot(real_feature, gen_feature) / (np.linalg.norm(real_feature) * np.linalg.norm(gen_feature))
-#                 similarities.append(similarity)
-            
-#             similarities = np.array(similarities)
-            
-#             max_similarity = np.max(similarities)
-#             predicted_label = list(generated_features.keys())[np.argmax(similarities)]
-#             final_label = predicted_label if max_similarity >= similarity_threshold else class_id
-#             image_labels_confidences.append((filename, predicted_label, max_similarity, final_label))
-
-#         # step 4: copy images to new folders based on new labels
-#         for filename, predicted_label, confidence, final_label in image_labels_confidences:
-#             dst_class_path = os.path.join(dst_dir, final_label)
-#             os.makedirs(dst_class_path, exist_ok=True)
-#             src_img_path = os.path.join(src_path, filename)
-#             dst_img_path = os.path.join(dst_class_path, filename)
-#             shutil.copy2(src_img_path, dst_img_path)
-#             print(f"Copied {filename} to {final_label}: Predicted Label {predicted_label}, Confidence {confidence:.4f}")
-
-def relabel_and_copy_images(src_dir, dst_dir, model_path, device, similarity_threshold=0.8):
+def relabel_and_copy_images(src_dir, dst_dir, model_path, device, similarity_threshold=0.6):
     model = load_model(model_path, device)
     feature_extractor = ResNet50FeatureExtractor(model).to(device)
     model.eval()
@@ -331,7 +209,9 @@ def relabel_and_copy_images(src_dir, dst_dir, model_path, device, similarity_thr
     # step 1: extract features for each generated image from all classes
     generated_features = {}
     for class_id in os.listdir(src_dir):
-        src_gen_path = f'/home/sd-finetune/data_generated/PMD70_top50_drop-SD-resized/{class_id}'
+        # src_gen_path = f'/home/sd-finetune/data_generated/PMD70_top50_drop-SD-resized/{class_id}'
+        # src_gen_path = f'/home/CIFAR100-SD-resized/{class_id}'
+        src_gen_path = f'/home/CIFAR10-SD-resized/{class_id}'
         generated_images, _ = load_images(src_gen_path, device, is_generated=True)
         generated_features[class_id] = compute_average_feature_map(generated_images, feature_extractor).cpu().detach().numpy().flatten()
 
@@ -406,8 +286,8 @@ def random_discard_images(src_dir, dst_dir, discard_count=100):
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_path = '/home/feature-extractor/train_CIFAR/models_pretrained/cifar100_PMD70.pt'
-    src_dir = '/home/feature-extractor/train_CIFAR/data/CIFAR100_noisy/noisy_PMD70'
-    dst_dir = '/home/feature-extractor/train_CIFAR/data/noisy_PMD70_test'
-    # filter_images_iter0(src_dir, dst_dir, model_path, device, add_generated=False, discard_count=100)
-    relabel_and_copy_images(src_dir, dst_dir, model_path, device, similarity_threshold=0.8)
+    model_path = '/home/feature-extractor/train_CIFAR/models_pretrained/cifar100_PMD35.pt'
+    src_dir = '/home/feature-extractor/train_CIFAR/data/CIFAR100_noisy/noisy_PMD35'
+    dst_dir = '/home/feature-extractor/train_CIFAR/data/noisy_PMD35_test'
+    # filter_images_iter0(src_dir, dst_dir, model_path, device, add_generated=False, discard_count=100, similarity_threshold=0.8)
+    relabel_and_copy_images(src_dir, dst_dir, model_path, device, similarity_threshold=0)
