@@ -1,7 +1,6 @@
 __pycache__
+cifar*
 models*
 logs
 *.log
 *.pt
-*.png
-*.jpg
