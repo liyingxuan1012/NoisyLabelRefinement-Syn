@@ -9,27 +9,25 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-# # CIFAR-10
-# transform = transforms.Compose([
-#     transforms.Resize(size=32),
-#     transforms.ToTensor(),
-#     transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
-#     ])
-
-# CIFAR-100
+# CIFAR-10
 transform = transforms.Compose([
     transforms.Resize(size=32),
     transforms.ToTensor(),
-    transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
-                        std=[0.2675, 0.2565, 0.2761])
+    transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     ])
 
+# # CIFAR-100
+# transform = transforms.Compose([
+#     transforms.Resize(size=32),
+#     transforms.ToTensor(),
+#     transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+#                         std=[0.2675, 0.2565, 0.2761])
+#     ])
+
 # load data
-# dataset = 'data/CIFAR100'
-# real_directory = os.path.join(dataset, 'test')
-real_directory = '/home/feature-extractor/train_CIFAR/data/CIFAR100_noisy/noisy_PMD70'
-# generated_directory = '/scratch/ace14550vm/SD-xl-turbo/val'
-model_directory = 'models_pretrained/cifar100_PMD70.pt'
+real_directory = 'data/CIFAR10_noisy/noisy_PMD35_A30'
+# generated_directory = '/home/CIFAR10-SD'
+model_directory = 'models_pretrained/cifar10_PMD35_A30.pt'
 
 # load model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu") 

@@ -236,4 +236,4 @@ valid_data_size = len(data['valid'])
 
 num_epochs = 200
 trained_model, history = train(num_epochs)
-# plot_curve(history)
+plot_curve(history)

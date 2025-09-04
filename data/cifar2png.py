@@ -29,21 +29,21 @@ def parse_pickle(rawdata, num_class, noisy_labels, rootdir):
 
 
 # # CIFAR-100
-# with open("train_CIFAR/data/cifar-100-python/train", "rb") as fp:
+# with open("data/cifar-100-python/train", "rb") as fp:
 #     train = pickle.load(fp, encoding="latin-1")
-# # with open("train_CIFAR/data/cifar-100-python/test", "rb") as fp:
+# # with open("data/cifar-100-python/test", "rb") as fp:
 # #     test = pickle.load(fp, encoding="latin-1")
 
-# noisy_labels = np.load('train_CIFAR/data/noise_label/cifar100-1-0.35_A_0.3.npy')
+# noisy_labels = np.load('data/noise_label/cifar100-1-0.35_A_0.3.npy')
 
-# parse_pickle(train, 100, noisy_labels, "train_CIFAR/data/CIFAR100_noisy/noisy_PMD35_A30")
+# parse_pickle(train, 100, noisy_labels, "data/CIFAR100_noisy/noisy_PMD35_A30")
 # # parse_pickle(test, 100, None, "CIFAR100/test")
 
 
 # CIFAR-10
 train_data = []
 for i in range(1, 6):
-    with open(f"train_CIFAR/data/cifar-10-batches-py/data_batch_{i}", "rb") as fp:
+    with open(f"data/cifar-10-batches-py/data_batch_{i}", "rb") as fp:
         batch = pickle.load(fp, encoding="latin-1")
         train_data.append(batch)
 
@@ -58,6 +58,6 @@ for batch in train_data:
     merged_train_data["fine_labels"].extend(batch["labels"])
     merged_train_data["data"] = np.vstack((merged_train_data["data"], batch["data"]))
 
-noisy_labels = np.load('train_CIFAR/data/noise_label/cifar10-1-0.35_A_0.3.npy')
+noisy_labels = np.load('data/noise_label/cifar10-1-0.35_A_0.3.npy')
 
-parse_pickle(merged_train_data, 10, noisy_labels, "train_CIFAR/data/CIFAR10_noisy/noisy_PMD35_A30")
+parse_pickle(merged_train_data, 10, noisy_labels, "data/CIFAR10_noisy/noisy_PMD35_A30")

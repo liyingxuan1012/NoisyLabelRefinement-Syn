@@ -37,13 +37,13 @@ def calculate_noise_rate(labels_path, gt_labels):
 
 
 # # CIFAR-100
-# with open("train_CIFAR/data/cifar-100-python/train", "rb") as fp:
+# with open("data/cifar-100-python/train", "rb") as fp:
 #     train = pickle.load(fp, encoding="latin-1")
 
 # CIFAR-10
 train_data = []
 for i in range(1, 6):
-    with open(f"train_CIFAR/data/cifar-10-batches-py/data_batch_{i}", "rb") as fp:
+    with open(f"data/cifar-10-batches-py/data_batch_{i}", "rb") as fp:
         batch = pickle.load(fp, encoding="latin-1")
         train_data.append(batch)
 
@@ -54,12 +54,12 @@ for batch in train_data:
 
 
 # Parse images to npy file
-parse_images_to_npy("train_CIFAR/data/cifar10_PMD35_A30_0.6", train, "train_CIFAR/data/noise_label/cifar10-1-0.35_A_0.3-ours-0.6.npy")
+parse_images_to_npy("data/cifar10_PMD35_A30", train, "data/noise_label/cifar10-1-0.35_A_0.3-ours.npy")
 
 # Calculate noise rates
 gt_labels = np.array(train["fine_labels"])
-noise_rate_original = calculate_noise_rate("train_CIFAR/data/noise_label/cifar10-1-0.35_A_0.3.npy", gt_labels)
-noise_rate_ours = calculate_noise_rate("train_CIFAR/data/noise_label/cifar10-1-0.35_A_0.3-ours-0.6.npy", gt_labels)
+noise_rate_original = calculate_noise_rate("data/noise_label/cifar10-1-0.35_A_0.3.npy", gt_labels)
+noise_rate_ours = calculate_noise_rate("data/noise_label/cifar10-1-0.35_A_0.3-ours.npy", gt_labels)
 
 print(f"Noise rate before denoising: {noise_rate_original:.2%}")
 print(f"Noise rate after denoising: {noise_rate_ours:.2%}")

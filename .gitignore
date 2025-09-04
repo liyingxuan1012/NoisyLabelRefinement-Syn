@@ -1,10 +1,7 @@
 __pycache__
-cifar*
-ImageNet*
 models*
 logs
 *.log
 *.pt
 *.png
 *.jpg
-*.sh.o*

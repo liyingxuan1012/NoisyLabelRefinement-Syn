@@ -10,10 +10,10 @@ transform = transforms.Compose([
     transforms.ToTensor()
 ])
 
-# 加载 CIFAR100 数据集
+# 加载 CIFAR10 数据集
 train_dataset = datasets.CIFAR100(root='.', train=True, transform=transform, download=False)
 # 加载含噪声的标签
-noise_labels = np.load('cifar100-1-0.35.npy')
+noise_labels = np.load('data/noise_label/cifar10-1-0.35.npy')
 
 # 计算前90%的索引
 split_index = int(0.9 * len(train_dataset))
@@ -24,19 +24,19 @@ mismatched_indices = [idx for idx, label in enumerate(train_dataset.targets[:spl
 selected_indices = random.sample(mismatched_indices, 16)
 
 # 准备展示图片和标签
-fig, axes = plt.subplots(nrows=2, ncols=8, figsize=(20, 5))  # 调整网格大小和图片尺寸
-axes = axes.flatten()  # 将 axes 数组展平，便于索引
+fig, axes = plt.subplots(nrows=2, ncols=8, figsize=(20, 5))
+axes = axes.flatten()
 
 for i, ax in enumerate(axes):
     idx = selected_indices[i]
     img, _ = train_dataset[idx]
-    img = img.permute(1, 2, 0)  # 调整通道顺序以适配 matplotlib
+    img = img.permute(1, 2, 0)
 
-    original_label = train_dataset.classes[train_dataset.targets[idx]]  # 获取原始标签名
-    noisy_label = train_dataset.classes[noise_labels[idx]]  # 获取噪声标签名
+    original_label = train_dataset.classes[train_dataset.targets[idx]]
+    noisy_label = train_dataset.classes[noise_labels[idx]]
 
     ax.imshow(img)
-    ax.axis('off')  # 关闭坐标轴
+    ax.axis('off')
     ax.set_title(f"{original_label} / {noisy_label}")
 
 plt.tight_layout()

@@ -11,7 +11,6 @@ import argparse
 from tqdm import tqdm
 from img_filter_sim import filter_images_iter0, filter_images_iter1, relabel_and_copy_images, random_discard_images
 
-sys.path.append('../')
 from img_noise_rate import compute_noise_rate
 
 

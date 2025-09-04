@@ -42,7 +42,7 @@ def filter_images_iter0(src_dir, dst_dir, device, add_generated=False, discard_c
     # step 1: extract features for each generated image from all classes
     generated_features = {}
     for class_id in os.listdir(src_dir):
-        src_gen_path = f'/home/sd-finetune/data_generated/PMD70_top50_drop-SD-resized/{class_id}'        
+        src_gen_path = f'/home/CIFAR10-SD/{class_id}'        
         generated_images, _ = load_images(src_gen_path, preprocess_clip, is_generated=True)
         avg_feature_map = compute_average_feature_map(generated_images, clip_model)
         generated_features[class_id] = avg_feature_map.cpu().numpy()
@@ -117,7 +117,7 @@ def relabel_and_copy_images(src_dir, dst_dir, device, similarity_threshold=0.8):
     # step 1: extract features for each generated image from all classes
     generated_features = {}
     for class_id in os.listdir(src_dir):
-        src_gen_path = f'/home/sd-finetune/data_generated/PMD70_top50_drop-SD-resized/{class_id}'
+        src_gen_path = f'/home/CIFAR10-SD/{class_id}'
         generated_images, _ = load_images(src_gen_path, preprocess_clip, is_generated=True)
         avg_feature_map = compute_average_feature_map(generated_images, clip_model)
         generated_features[class_id] = avg_feature_map.cpu().detach().numpy()
@@ -160,7 +160,7 @@ def relabel_and_copy_images(src_dir, dst_dir, device, similarity_threshold=0.8):
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    src_dir = '/home/feature-extractor/train_CIFAR/data/CIFAR100_noisy/noisy_PMD70'
-    dst_dir = '/home/feature-extractor/train_CIFAR/data/noisy_PMD70_test'
-    filter_images_iter0(src_dir, dst_dir, device, add_generated=False, discard_count=300, similarity_threshold=0.8)
-    # relabel_and_copy_images(src_dir, dst_dir, device, similarity_threshold=0.8)
+    src_dir = 'data/CIFAR10_noisy/noisy_PMD70'
+    dst_dir = 'data/noisy_PMD70_test'
+    # filter_images_iter0(src_dir, dst_dir, device, add_generated=False, discard_count=300, similarity_threshold=0.8)
+    relabel_and_copy_images(src_dir, dst_dir, device, similarity_threshold=0.6)

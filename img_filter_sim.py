@@ -4,10 +4,33 @@ import random
 import shutil
 import torch
 import numpy as np
+from torchvision import transforms
+from PIL import Image
 
-sys.path.append('../')
-from feature_extractor import ResNet50FeatureExtractor, load_model, preprocess_image
+from feature_extractor import ResNet50FeatureExtractor, load_model
 
+
+def preprocess_image(img_path, device):
+    # CIFAR-10
+    transform = transforms.Compose([
+        transforms.Resize(size=32),
+        transforms.ToTensor(),
+        transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
+        ])
+
+    # # CIFAR-100
+    # transform = transforms.Compose([
+    #     transforms.Resize(size=32),
+    #     transforms.ToTensor(),
+    #     transforms.Normalize(mean=[0.5071, 0.4867, 0.4408], 
+    #                         std=[0.2675, 0.2565, 0.2761])
+    #     ])
+    
+    image = Image.open(img_path)
+    if image.mode != 'RGB':
+        image = image.convert('RGB')
+    image = transform(image).unsqueeze(0).to(device)
+    return image
 
 def load_images(folder, device, is_generated=False):
     images = []
@@ -68,7 +91,7 @@ def filter_images_iter0(src_dir, dst_dir, model_path, device, add_generated=Fals
     # step 1: extract features for each generated image from all classes
     generated_features = {}
     for class_id in os.listdir(src_dir):
-        src_gen_path = f'/home/SD-xl-turbo/train/{class_id}'
+        src_gen_path = f'/home/CIFAR10-SD/{class_id}'
         generated_images, _ = load_images(src_gen_path, device, is_generated=True)
         generated_features[class_id] = compute_average_feature_map(generated_images, feature_extractor).cpu().detach().numpy().flatten()
 
@@ -147,7 +170,7 @@ def filter_images_iter1(src_dir, dst_dir, i_iter, model_path, device, add_genera
     for class_id in os.listdir(src_dir):
         src_path = os.path.join(src_dir, class_id)
         dst_path = os.path.join(dst_dir, class_id)
-        src_gen_path = f'/home/CIFAR100-SD/{class_id}'
+        src_gen_path = f'/home/CIFAR10-SD/{class_id}'
 
         num_real_imgs_src = len(os.listdir(src_path))
         num_real_imgs_dst = count_real_imgs(dst_path)
@@ -185,7 +208,7 @@ def relabel_and_copy_images(src_dir, dst_dir, model_path, device, similarity_thr
     # step 1: extract features for each generated image from all classes
     generated_features = {}
     for class_id in os.listdir(src_dir):
-        src_gen_path = f'/home/SD-xl-turbo/train/{class_id}'
+        src_gen_path = f'/home/CIFAR10-SD/{class_id}'
         generated_images, _ = load_images(src_gen_path, device, is_generated=True)
         generated_features[class_id] = compute_average_feature_map(generated_images, feature_extractor).cpu().detach().numpy().flatten()
 
@@ -260,8 +283,8 @@ def random_discard_images(src_dir, dst_dir, discard_count=100):
 
 if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model_path = '/home/feature-extractor/train_ImageNet/models_pretrained/noisy_pair60.pt'
-    src_dir = '/home/feature-extractor/train_ImageNet/data/ImageNet100_noisy/noisy_pair60'
-    dst_dir = '/home/feature-extractor/train_ImageNet/data/imagenet100_pair60'
+    model_path = 'models_pretrained/cifar10_PMD35.pt'
+    src_dir = 'data/CIFAR10_noisy/noisy_PMD35'
+    dst_dir = 'data/noisy_PMD35_test'
     # filter_images_iter0(src_dir, dst_dir, model_path, device, add_generated=False, discard_count=100, similarity_threshold=0.8)
-    relabel_and_copy_images(src_dir, dst_dir, model_path, device, similarity_threshold=0)
+    relabel_and_copy_images(src_dir, dst_dir, model_path, device, similarity_threshold=0.6)

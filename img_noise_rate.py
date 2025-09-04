@@ -33,7 +33,7 @@ def compute_noise_rate(data_path):
 
 
 if __name__ == '__main__':
-    data_path = 'train_CIFAR/data/CIFAR10_noisy/noisy_PMD35_U60'
+    data_path = 'data/CIFAR10_noisy/noisy_PMD35_A30'
     mismatched_images, total_images = compute_noise_rate(data_path)
     
     # calculate and print the overall noise rate
