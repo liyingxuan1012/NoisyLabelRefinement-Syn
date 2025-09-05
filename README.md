@@ -1,7 +1,7 @@
 # Noisy Label Refinement with Semantically Reliable Synthetic Images (ICIP 2025)
-This repository includes all codes to reproduce the main experiments of our paper: **Noisy Label Refinement with Semantically Reliable Synthetic Images** | [Paper]() | [Poster]()
+This repository includes all codes to reproduce the main experiments of our paper: **Noisy Label Refinement with Semantically Reliable Synthetic Images** | [Paper](https://arxiv.org/abs/2509.04298) | [Poster](assets/ICIP2025_poster.pdf)
 
-![Introduction](figure/pipeline.png)
+![Introduction](assets/pipeline.png)
 
 ### Overview
 Semantic noise in image classification datasets, where visually similar categories are frequently mislabeled, poses a significant challenge to conventional supervised learning.  
